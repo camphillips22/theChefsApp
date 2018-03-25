@@ -27,4 +27,8 @@ python run.py
 Run the data_modeling iPython notebook. This will generate chefs.db.
 
 # Running the Clustering Script
-Make sure you have a local copy of the database first. Open clustering_proof_of_concept.py and review the filters at the top of the script. You can set the number of recipes returned, as well as the category filters to apply. Comments in the script describe the variables' function. Then, run the file and see output in the console.
+Make sure you have a local copy of the database first. Open
+clustering_proof_of_concept.py and review the filters at the top of the script.
+You can set the number of recipes returned, as well as the category filters to
+apply. Comments in the script describe the variables' function. Then, run the
+file and see output in the console.
