@@ -165,7 +165,7 @@ results = results.with_entities(\
 		tbl_Recipe_Ingredients.columns.ingredient_id,\
 		tbl_Ingredients.columns.ingredient)
 
-print str(results.statement.compile(dialect=sqlite.dialect()))
+print(str(results.statement.compile(dialect=sqlite.dialect())))
 
 
 #for all table joins
@@ -183,7 +183,7 @@ raw_data = pd.DataFrame(results.all(), columns=["Id", "Recipe",
 session.close()
 
 tDataLoaded = time.time()
-print "Data load took: " + str(tDataLoaded-tStart) + " secs"
+print("Data load took: " + str(tDataLoaded-tStart) + " secs")
 
 #CSV DATA LOAD
 '''
@@ -213,7 +213,7 @@ df_sample = raw_data.groupby('Id').agg({
                         'Ingredient' : set_func})
 
 tDataGrouped = time.time()
-print "Data grouping took: " + str(tDataGrouped-tDataLoaded) + " secs"
+print("Data grouping took: " + str(tDataGrouped-tDataLoaded) + " secs")
 
 #BUILD DISTANCE/SIMILARITY MATRIX
 #adapted from https://stackoverflow.com/questions/30140104/clustering-categorical-data-using-jaccard-similarity
@@ -234,10 +234,10 @@ hist, _ = np.histogram(a=distance_matrix, bins=10, range=(0.,1.))
 hist_print = [(1.*x) / (1.*NUM_RECIPES * NUM_RECIPES) for x in hist]
 
 tSimilarityCalculated = time.time()
-print "Similarity Calculation took: " \
-+ str(tSimilarityCalculated - tDataGrouped) + " secs"
-print "Distribution of similarities: "
-print hist
+print("Similarity Calculation took: " \
++ str(tSimilarityCalculated - tDataGrouped) + " secs")
+print("Distribution of similarities: ")
+print(hist)
 
 #CLUSTERING
 '''
@@ -255,10 +255,10 @@ df_sample["cluster"] = model.labels_
 df_clusters = df_sample.groupby("cluster")
 
 tClustering = time.time()
-print "Clustering took: " + str(tClustering-tSimilarityCalculated) + " secs"
+print("Clustering took: " + str(tClustering-tSimilarityCalculated) + " secs")
 
-print df_clusters.count()
+print(df_clusters.count())
 
 for key, item in df_clusters:
 	if key >-1:
-		print df_clusters.get_group(key), "\n\n"
+		print(df_clusters.get_group(key), "\n\n")
