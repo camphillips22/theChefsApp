@@ -1,5 +1,19 @@
+from __future__ import print_function
+from __future__ import division
 from . import db
 from sqlalchemy.orm import relationship
+from sklearn.cluster import DBSCAN
+import pandas as pd
+import numpy as np
+from itertools import combinations
+from scipy.spatial import distance
+
+
+def jaccard(set1, set2):
+    intersect_len = len(set1.intersection(set2))
+    if intersect_len <= 0:
+        return 1.0
+    return 1.0 - (intersect_len / (len(set1) + len(set2) - intersect_len))
 
 
 ingredient_association = db.Table(
@@ -147,7 +161,45 @@ class Recipe(db.Model):
         query = cls.query
         for q in qs:
             query = query.join(q, q.c.id == cls.id)
-        return query
+        return query.distinct(cls.id)
+
+    @classmethod
+    def filter_multiple_with_ingredients(cls, *args):
+        sq = cls.filter_multiple(*args).subquery()
+        return db.session.query(
+            sq.c.id,
+            sq.c.name,
+            Ingredient.id,
+            Ingredient.name
+        ).join(
+            ingredient_association,
+            sq.c.id == ingredient_association.columns.recipe_id
+        ).join(
+            Ingredient,
+            Ingredient.id == ingredient_association.columns.ingredient_id
+        )
+
+    @classmethod
+    def cluster_on_filters(cls, clust_fact, *args):
+        result = cls.filter_multiple_with_ingredients(*args).all()
+        df = pd.DataFrame(result, columns=['rid', 'rname', 'iid', 'iname'])
+        grouped = df.groupby('rid').agg({
+            'rname': 'first',
+            'iid': lambda x: set(x),
+            'iname': lambda x: set(x),
+        })
+        jacc_gen = (
+            jaccard(r1, r2)
+            for r1, r2 in combinations(grouped['iname'], r=2)
+        )
+        dist_mat = distance.squareform(
+            np.fromiter(jacc_gen, dtype=np.float64)
+        )
+
+        model = DBSCAN(metric='precomputed', eps=clust_fact, n_jobs=-1)
+        model.fit(dist_mat)
+        grouped['cluster'] = model.labels_
+        return grouped.groupby('cluster')
 
     def __repr__(self):
         return '<Recipe {}, {}>'.format(self.id, self.name)
