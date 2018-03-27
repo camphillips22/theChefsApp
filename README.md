@@ -4,13 +4,13 @@ Group Project for CSE6242
 # Installation
 
 To install packages, run:
-```
+```bash
 pip install -r requirements.txt
 ```
 Note that it is assumed that you have Python 2.7+ (not 3.X), as well as Pandas and Numpy. If not, please install these first.
 
 # Running Server
-```
+```bash
 python run.py
 ```
 
@@ -18,17 +18,33 @@ python run.py
 Running the development server allows you to change files and the server will
 recognize the changes and restart. To run the development server, run
 
-```
+```bash
 export DEBUG=True
 python run.py
 ```
 
 # Creating a Local Copy of the Database
-Run the data_modeling iPython notebook. This will generate chefs.db.
+Run 
+```python
+python init_db.py
+```
+Be patient as it will take a while. It should update on it's progress.
 
-# Running the Clustering Script
-Make sure you have a local copy of the database first. Open
-clustering_proof_of_concept.py and review the filters at the top of the script.
-You can set the number of recipes returned, as well as the category filters to
-apply. Comments in the script describe the variables' function. Then, run the
-file and see output in the console.
+# Running the Clustering Algorithm
+You can test the clustering by starting a flask shell by running.
+```bash
+export FLASK_APP=run.py
+flask shell
+```
+The shell will provide a few pre-imported classes including the flask database
+and all of the current models.
+
+Clustering and filtering can be performed by calling the function
+`Recipe.cluster_on_filter(clust_fact, *args)` where `clust_fact` is the cluster
+sensitivity of the DBSCAN algorithm and `*args` are alternating arguments of
+`db.Model` and name of entry. An few examples of this are shown below.
+
+```python
+Recipe.cluster_on_filter(0.7, Course, 'Main course', Diet, 'Vegan')
+Recipe.cluster_on_filter(0.7, Ethnicity, 'American')
+```
