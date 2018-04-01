@@ -103,6 +103,8 @@ class Recipe(db.Model):
 
     @classmethod
     def filter_by_table(cls, other_class, filt_list):
+        if len(filt_list) == 0:
+            return cls.query
         if isinstance(filt_list, (str, int)):
             filt_list = (filt_list,)
 
