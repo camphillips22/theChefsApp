@@ -2,17 +2,18 @@ from flask import render_template, request
 import json
 
 from app import app
-from app import models
+from app.models import (Recipe, Ingredient, Course, Ethnicity, RecipeType,
+                        Diet, Occasion)
 
 
 @app.route('/')
 @app.route('/index')
 def index():
-    courses = models.Course.query.all()
-    ethnicities = models.Ethnicity.query.all()
-    types = models.RecipeType.query.all()
-    diets = models.Diet.query.all()
-    occasions = models.Occasion.query.all()
+    courses = Course.query.all()
+    ethnicities = Ethnicity.query.all()
+    types = RecipeType.query.all()
+    diets = Diet.query.all()
+    occasions = Occasion.query.all()
 
     return render_template(
         'index.html',
@@ -28,7 +29,16 @@ def index():
 @app.route('/filter', methods=['POST'])
 def filter_recipes():
     if request.method == 'POST':
-        return str(request.form)
+        result = Recipe.filter_multiple(
+            Course, [int(id) for id in request.form.getlist('course')],
+            Ethnicity, [int(id) for id in request.form.getlist('ethnicity')],
+            Occasion, [int(id) for id in request.form.getlist('occasion')],
+            RecipeType, [int(id) for id in request.form.getlist('type')],
+            Diet, [int(id) for id in request.form.getlist('diet')],
+            Ingredient, [int(id) for id in request.form.getlist('ingredient')]
+        ).limit(5000).all()
+        data = {"results": [{"id": rec.id, "name": rec.name} for rec in result]}
+        return json.dumps(data)
 
 
 @app.route('/search/ingredients', methods=['POST'])

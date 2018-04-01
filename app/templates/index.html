@@ -25,7 +25,7 @@
   </div>
   {% endfor %}
   <div class="form-group">
-    <select id="ingredient_name" multiple="multiple">
+    <select id="ingredient_name" name="ingredient" multiple="multiple">
     {% for model in ingredients %}
       <option value="{{model.id}}">{{ model.name }}</option>
     {% endfor %}
@@ -71,7 +71,7 @@
         url: "{{ url_for('filter_recipes') }}",
         data: $("#filter_form").serialize(),
         success: function(response) {
-          console.log(response);
+          console.log(JSON.parse(response));
         },
       });
     });
