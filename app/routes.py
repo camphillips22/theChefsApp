@@ -70,8 +70,8 @@ def filter_with_cluster():
 @app.route('/search/ingredients', methods=['POST'])
 def search_ingredients():
     if request.method == 'POST':
-        ings = models.Ingredient.query.filter(
-            models.Ingredient.name.contains(request.form['q'])
+        ings = Ingredient.query.filter(
+            Ingredient.name.contains(request.form['q'])
         ).all()
         data = {"results": [{'id': ing.id, "text": ing.name} for ing in ings]}
         return json.dumps(data)
