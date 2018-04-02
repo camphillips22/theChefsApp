@@ -41,6 +41,32 @@ def filter_recipes():
         return json.dumps(data)
 
 
+@app.route('/cluster_filter', methods=['POST'])
+def filter_with_cluster():
+    if request.method == 'POST':
+        if request.form['grouping'] == 'similarity':
+            clusters = Recipe.cluster_on_filters(0.7,
+                Course, [int(id) for id in request.form.getlist('course')],
+                Ethnicity, [int(id) for id in request.form.getlist('ethnicity')],
+                Occasion, [int(id) for id in request.form.getlist('occasion')],
+                RecipeType, [int(id) for id in request.form.getlist('type')],
+                Diet, [int(id) for id in request.form.getlist('diet')],
+                Ingredient, [int(id) for id in request.form.getlist('ingredient')]
+            )
+
+            data = {
+                "results": [
+                    {
+                        str(group): [
+                            {"id": row.name, "name": row.rname}
+                            for idx, row in clusters.get_group(group).iterrows()
+                        ]
+                    } for group in clusters.groups.keys()
+                ]
+            }
+            return json.dumps(data)
+
+
 @app.route('/search/ingredients', methods=['POST'])
 def search_ingredients():
     if request.method == 'POST':

@@ -31,6 +31,12 @@
     {% endfor %}
     </select>
   </div>
+  <div class="form-group">
+    <label class="control-label" for="grouping_select">Grouping</label>
+    <select id="grouping_select" name="grouping">
+      <option value="similarity">Similarity</option>
+    </select>
+  </div>
   <button id="submit_filter" class="btn btn-primary">Submit Filters</button>
 </form>
 </div>
@@ -52,6 +58,11 @@
     });
     {% endfor %}
 
+    $("#grouping_select").select2({
+      placeholder: "Select grouping...",
+      width: '100%'
+    });
+
     $("#ingredient_name").select2({
       minimumInputLength: 2,
       placeholder: "Select ingredients...",
@@ -68,7 +79,7 @@
       e.preventDefault();
       $.ajax({
         type: "POST",
-        url: "{{ url_for('filter_recipes') }}",
+        url: "{{ url_for('filter_with_cluster') }}",
         data: $("#filter_form").serialize(),
         success: function(response) {
           console.log(JSON.parse(response));
