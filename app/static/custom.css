@@ -1,0 +1,34 @@
+
+.navbar {
+  background: #00263A;
+}
+
+.navbar-brand {
+  color: #FFFFFF;
+}
+
+.navbar-brand:hover {
+  color: #FFFFFF;
+}
+
+.navbar-text {
+  color: #E5E5E5;
+}
+
+.fixed-sidebar {
+    padding-left: 30px;
+    padding-top: 50px;
+    width: 240px;
+    position:fixed;
+    height:100%;
+    z-index:1;
+}
+
+.selector {
+  padding: 10px;
+}
+
+.main-content {
+  padding-top: 50px;
+  padding-left: 240px;
+}

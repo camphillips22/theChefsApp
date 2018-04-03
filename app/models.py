@@ -103,8 +103,15 @@ class Recipe(db.Model):
 
     @classmethod
     def filter_by_table(cls, other_class, filt_list):
-        if isinstance(filt_list, str):
+        if len(filt_list) == 0:
+            return cls.query
+        if isinstance(filt_list, (str, int)):
             filt_list = (filt_list,)
+
+        if isinstance(filt_list[0], int):
+            filter_col = other_class.id
+        elif isinstance(filt_list[0], str):
+            filter_col = other_class.name
 
         assoc_lookup = {
             Ethnicity: cls.ethnicities,
@@ -118,7 +125,7 @@ class Recipe(db.Model):
         return cls.query.join(
             assoc_lookup[other_class]
         ).filter(
-            other_class.name.in_(filt_list)
+            filter_col.in_(filt_list)
         ).group_by(
             cls.id
         ).having(

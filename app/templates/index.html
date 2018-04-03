@@ -1,7 +1,91 @@
 {% extends "base.html" %}
+{% set models = [('course', courses), ('ethnicity', ethnicities), ('occasion', occasions),
+                 ('diet', diets), ('type', types)] %}
 
 {% block title %}Home{% endblock %}
+
+{% block stylesheets %}
+{{ super() }}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<link href="{{ url_for('static', filename='custom.css') }}" rel="stylesheet"/>
+{% endblock %}
+
+{% block sidebar %}
+<div class="filter-sidebar">
+  <h2>Filter Recipes</h2>
+  <form id="filter_form" class="form">
+  {% for id, model in models %}
+  <div class="form-group">
+    <select id="{{ id }}_select" name="{{id}}" class="form-control" multiple="multiple">
+      <option value=""></option>
+      {% for item in model %}
+        <option value="{{item.id}}">{{ item.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endfor %}
+  <div class="form-group">
+    <select id="ingredient_name" name="ingredient" multiple="multiple">
+    {% for model in ingredients %}
+      <option value="{{model.id}}">{{ model.name }}</option>
+    {% endfor %}
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="control-label" for="grouping_select">Grouping</label>
+    <select id="grouping_select" name="grouping">
+      <option value="similarity">Similarity</option>
+    </select>
+  </div>
+  <button id="submit_filter" class="btn btn-primary">Submit Filters</button>
+</form>
+</div>
+{% endblock sidebar %}
 
 {% block content %}
   <p class="text-center">Viz to go here</p>
 {% endblock content %}
+
+{% block javascripts %}
+{{ super() }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script>
+  $(document).ready(function() {
+    {% for id, model in models %}
+    $("#{{ id }}_select").select2({
+      placeholder: "Select {{ id }}...",
+      width: '100%'
+    });
+    {% endfor %}
+
+    $("#grouping_select").select2({
+      placeholder: "Select grouping...",
+      width: '100%'
+    });
+
+    $("#ingredient_name").select2({
+      minimumInputLength: 2,
+      placeholder: "Select ingredients...",
+      width: '100%',
+      ajax: {
+        type: "post",
+        url: "{{ url_for('search_ingredients') }}",
+        dataType: "json",
+        delay: 250
+      }
+    });
+
+    $("#filter_form").submit(function(e) {
+      e.preventDefault();
+      $.ajax({
+        type: "POST",
+        url: "{{ url_for('filter_with_cluster') }}",
+        data: $("#filter_form").serialize(),
+        success: function(response) {
+          console.log(JSON.parse(response));
+        },
+      });
+    });
+  });
+</script>
+{% endblock %}
