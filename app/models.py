@@ -180,6 +180,60 @@ class Recipe(db.Model):
         )
 
     @classmethod
+    def filter_by_one_group(cls,group_class):
+        assoc_lookup = {
+            Ethnicity: cls.ethnicities,
+            Course: cls.courses,
+            Occasion: cls.occasions,
+            Diet: cls.diets,
+            RecipeType: cls.types,
+            Ingredient: cls.ingredients
+        }
+        query = cls.query.join(assoc_lookup[group_class]).subquery()
+        return query
+
+    @classmethod
+    def filter_by_groups(cls,*args):
+        print (args)
+        qs = [
+            cls.filter_by_one_group(args[x])
+            for x in range(0, len(args))
+        ]
+        query = cls.query
+        for q in qs:
+            query = query.join(q, q.c.id == cls.id)
+        return query.distinct(cls.id).subquery()
+    
+    @classmethod
+    def filter_by_group_with_id(cls,group_class,query):
+        link_lookup = {
+            Ethnicity: ethnicity_association,
+            Course: course_association,
+            Occasion: occasion_association,
+            Diet: diet_association,
+            RecipeType: type_association,
+            Ingredient: ingredient_association
+        }
+        if (group_class.__name__ == "RecipeType"):
+            id_name = "type_id"
+        else:
+            id_name = group_class.__name__.lower()+'_id'
+        return db.session.query(
+            db.func.count(query.c.id),
+            group_class.id,
+            group_class.name
+        ).join(
+            link_lookup[group_class],
+            query.c.id == link_lookup[group_class].columns.recipe_id
+        ).join(
+            group_class,
+            group_class.id == link_lookup[group_class].columns[id_name]
+        ).group_by(group_class.id)
+
+
+        
+
+    @classmethod
     def cluster_on_filters(cls, clust_fact, *args):
         result = cls.filter_multiple_with_ingredients(*args).all()
         df = pd.DataFrame(result, columns=['rid', 'rname', 'iid', 'iname'])
@@ -200,6 +254,25 @@ class Recipe(db.Model):
         model.fit(dist_mat)
         grouped['cluster'] = model.labels_
         return grouped.groupby('cluster')
+    
+    @classmethod
+    def group_on_filters(cls, *args):
+
+        if len(args)<2:
+            query = cls.filter_by_one_group(*args)
+        else:
+            query = cls.filter_by_groups(*args)
+        results = pd.DataFrame(columns=['rnum','gid','gname'])    
+        for group_class in args:
+            result = cls.filter_by_group_with_id(group_class,query).all()
+            df = pd.DataFrame(result, columns=['rnum','gid','gname'])
+            results = pd.concat([results,df],ignore_index=True)
+
+        cols = results.columns.tolist()
+        cols = cols[1:] + cols[:1]
+        results = results[cols]
+        print (results)
+        return results
 
     def __repr__(self):
         return '<Recipe {}, {}>'.format(self.id, self.name)
