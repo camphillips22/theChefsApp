@@ -187,7 +187,7 @@ class Recipe(db.Model):
         )
 
     @classmethod
-    def filter_by_one_group(cls,group_class):
+    def filter_by_one_group(cls, group_class):
         assoc_lookup = {
             Ethnicity: cls.ethnicities,
             Course: cls.courses,
@@ -200,8 +200,8 @@ class Recipe(db.Model):
         return query
 
     @classmethod
-    def filter_by_groups(cls,*args):
-        print (args)
+    def filter_by_groups(cls, *args):
+        print(args)
         qs = [
             cls.filter_by_one_group(args[x])
             for x in range(0, len(args))
@@ -210,9 +210,9 @@ class Recipe(db.Model):
         for q in qs:
             query = query.join(q, q.c.id == cls.id)
         return query.distinct(cls.id).subquery()
-    
+
     @classmethod
-    def filter_by_group_with_id(cls,group_class,query):
+    def filter_by_group_with_id(cls, group_class, query):
         link_lookup = {
             Ethnicity: ethnicity_association,
             Course: course_association,
@@ -221,7 +221,7 @@ class Recipe(db.Model):
             RecipeType: type_association,
             Ingredient: ingredient_association
         }
-        if (group_class.__name__ == "RecipeType"):
+        if group_class.__name__ == "RecipeType":
             id_name = "type_id"
         else:
             id_name = group_class.__name__.lower()+'_id'
@@ -236,9 +236,6 @@ class Recipe(db.Model):
             group_class,
             group_class.id == link_lookup[group_class].columns[id_name]
         ).group_by(group_class.id)
-
-
-        
 
     @classmethod
     def cluster_on_filters(cls, clust_fact, *args):
@@ -261,24 +258,26 @@ class Recipe(db.Model):
         model.fit(dist_mat)
         grouped['cluster'] = model.labels_
         return grouped.groupby('cluster')
-    
+
     @classmethod
     def group_on_filters(cls, *args):
 
-        if len(args)<2:
+        if len(args) < 2:
             query = cls.filter_by_one_group(*args)
         else:
             query = cls.filter_by_groups(*args)
-        results = pd.DataFrame(columns=['rnum','gid','gname'])    
+
+        results = pd.DataFrame(columns=['rnum', 'gid', 'gname'])
+
         for group_class in args:
-            result = cls.filter_by_group_with_id(group_class,query).all()
-            df = pd.DataFrame(result, columns=['rnum','gid','gname'])
-            results = pd.concat([results,df],ignore_index=True)
+            result = cls.filter_by_group_with_id(group_class, query).all()
+            df = pd.DataFrame(result, columns=['rnum', 'gid', 'gname'])
+            results = pd.concat([results, df], ignore_index=True)
 
         cols = results.columns.tolist()
         cols = cols[1:] + cols[:1]
         results = results[cols]
-        print (results)
+        print(results)
         return results
 
     def __repr__(self):
