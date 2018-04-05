@@ -102,6 +102,30 @@ class Recipe(db.Model):
     )
 
     @classmethod
+    def relationship_with(cls, other_class):
+        assoc_lookup = {
+            Ethnicity: cls.ethnicities,
+            Course: cls.courses,
+            Occasion: cls.occasions,
+            Diet: cls.diets,
+            RecipeType: cls.types,
+            Ingredient: cls.ingredients
+        }
+        return assoc_lookup[other_class]
+
+    @classmethod
+    def association_with(cls, other_class):
+        link_lookup = {
+            Ethnicity: ethnicity_association,
+            Course: course_association,
+            Occasion: occasion_association,
+            Diet: diet_association,
+            RecipeType: type_association,
+            Ingredient: ingredient_association
+        }
+        return link_lookup[other_class]
+
+    @classmethod
     def filter_by_table(cls, other_class, filt_list):
         if len(filt_list) == 0:
             return cls.query
@@ -113,17 +137,8 @@ class Recipe(db.Model):
         elif isinstance(filt_list[0], str):
             filter_col = other_class.name
 
-        assoc_lookup = {
-            Ethnicity: cls.ethnicities,
-            Course: cls.courses,
-            Occasion: cls.occasions,
-            Diet: cls.diets,
-            RecipeType: cls.types,
-            Ingredient: cls.ingredients
-        }
-
         return cls.query.join(
-            assoc_lookup[other_class]
+            cls.relationship_with(other_class)
         ).filter(
             filter_col.in_(filt_list)
         ).group_by(
@@ -172,70 +187,30 @@ class Recipe(db.Model):
 
     @classmethod
     def filter_multiple_with_ingredients(cls, *args):
+        return cls.filter_multiple_with_other(Ingredient, *args)
+
+    @classmethod
+    def filter_multiple_with_other(cls, other_class, *args):
         sq = cls.filter_multiple(*args).subquery()
+        assoc_table = cls.association_with(other_class)
+
+        if other_class.__name__ == 'RecipeType':
+            col_name = 'type_id'
+        else:
+            col_name = other_class.__name__.lower() + '_id'
+
         return db.session.query(
             sq.c.id,
             sq.c.name,
-            Ingredient.id,
-            Ingredient.name
+            other_class.id,
+            other_class.name
         ).join(
-            ingredient_association,
-            sq.c.id == ingredient_association.columns.recipe_id
+            assoc_table,
+            sq.c.id == assoc_table.columns.recipe_id
         ).join(
-            Ingredient,
-            Ingredient.id == ingredient_association.columns.ingredient_id
+            other_class,
+            other_class.id == assoc_table.columns[col_name]
         )
-
-    @classmethod
-    def filter_by_one_group(cls, group_class):
-        assoc_lookup = {
-            Ethnicity: cls.ethnicities,
-            Course: cls.courses,
-            Occasion: cls.occasions,
-            Diet: cls.diets,
-            RecipeType: cls.types,
-            Ingredient: cls.ingredients
-        }
-        query = cls.query.join(assoc_lookup[group_class]).subquery()
-        return query
-
-    @classmethod
-    def filter_by_groups(cls, *args):
-        print(args)
-        qs = [
-            cls.filter_by_one_group(args[x])
-            for x in range(0, len(args))
-        ]
-        query = cls.query
-        for q in qs:
-            query = query.join(q, q.c.id == cls.id)
-        return query.distinct(cls.id).subquery()
-
-    @classmethod
-    def filter_by_group_with_id(cls, group_class, query):
-        link_lookup = {
-            Ethnicity: ethnicity_association,
-            Course: course_association,
-            Occasion: occasion_association,
-            Diet: diet_association,
-            RecipeType: type_association,
-            Ingredient: ingredient_association
-        }
-        if group_class.__name__ == "RecipeType":
-            id_name = "type_id"
-        else:
-            id_name = group_class.__name__.lower()+'_id'
-        return db.session.query(
-            db.func.count(query.c.id),
-            group_class.id,
-            group_class.name
-        ).join(
-            link_lookup[group_class],
-            query.c.id == link_lookup[group_class].columns.recipe_id
-        ).join(
-            group_class,
-            group_class.id == link_lookup[group_class].columns[id_name]
-        ).group_by(group_class.id)
 
     @classmethod
     def cluster_on_filters(cls, clust_fact, *args):
@@ -260,25 +235,14 @@ class Recipe(db.Model):
         return grouped.groupby('cluster')
 
     @classmethod
-    def group_on_filters(cls, *args):
-
-        if len(args) < 2:
-            query = cls.filter_by_one_group(*args)
-        else:
-            query = cls.filter_by_groups(*args)
-
-        results = pd.DataFrame(columns=['rnum', 'gid', 'gname'])
-
-        for group_class in args:
-            result = cls.filter_by_group_with_id(group_class, query).all()
-            df = pd.DataFrame(result, columns=['rnum', 'gid', 'gname'])
-            results = pd.concat([results, df], ignore_index=True)
-
-        cols = results.columns.tolist()
-        cols = cols[1:] + cols[:1]
-        results = results[cols]
-        print(results)
-        return results
+    def group_on_filters(cls, group_cls, *args):
+        result = cls.filter_multiple_with_other(group_cls, *args).all()
+        df = pd.DataFrame(result, columns=['rid', 'rname', 'gid', 'gname'])
+        return df.groupby('gid').agg({
+            'gname': 'first',
+            'rid': lambda x: set(x),
+            'rname': lambda x: set(x),
+        })
 
     def __repr__(self):
         return '<Recipe {}, {}>'.format(self.id, self.name)

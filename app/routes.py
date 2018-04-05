@@ -6,6 +6,41 @@ from app.models import (Recipe, Ingredient, Course, Ethnicity, RecipeType,
                         Diet, Occasion)
 
 
+def package_clusters(clusters):
+    return {
+        "results": [
+            {
+                str(group): [
+                    {"id": row.name, "name": row.rname}
+                    for idx, row in clusters.get_group(group).iterrows()
+                ]
+            } for group in clusters.groups.keys()
+        ]
+    }
+
+
+def package_groups(groups):
+    return {
+        "results": [
+            {
+                row.gname: [
+                    {"id": id, "name": name}
+                    for id, name in zip(row.rid, row.rname)
+                ]
+            } for idx, row in groups.iterrows()
+        ]
+    }
+
+
+def get_filter_args(req):
+    return Course, [int(id) for id in req.form.getlist('course')], \
+        Ethnicity, [int(id) for id in req.form.getlist('ethnicity')], \
+        Occasion, [int(id) for id in req.form.getlist('occasion')], \
+        RecipeType, [int(id) for id in req.form.getlist('type')], \
+        Diet, [int(id) for id in req.form.getlist('diet')], \
+        Ingredient, [int(id) for id in req.form.getlist('ingredient')]
+
+
 @app.route('/')
 @app.route('/index')
 def index():
@@ -45,26 +80,32 @@ def filter_recipes():
 def filter_with_cluster():
     if request.method == 'POST':
         if request.form['grouping'] == 'similarity':
-            clusters = Recipe.cluster_on_filters(0.7,
-                Course, [int(id) for id in request.form.getlist('course')],
-                Ethnicity, [int(id) for id in request.form.getlist('ethnicity')],
-                Occasion, [int(id) for id in request.form.getlist('occasion')],
-                RecipeType, [int(id) for id in request.form.getlist('type')],
-                Diet, [int(id) for id in request.form.getlist('diet')],
-                Ingredient, [int(id) for id in request.form.getlist('ingredient')]
-            )
+            clusters = Recipe.cluster_on_filters(0.7, *get_filter_args(request))
+            data = package_clusters(clusters)
 
-            data = {
-                "results": [
-                    {
-                        str(group): [
-                            {"id": row.name, "name": row.rname}
-                            for idx, row in clusters.get_group(group).iterrows()
-                        ]
-                    } for group in clusters.groups.keys()
-                ]
-            }
-            return json.dumps(data)
+        elif request.form['grouping'] == 'occasion':
+            clusters = Recipe.group_on_filters(Occasion, *get_filter_args(request))
+            data = package_groups(clusters)
+
+        elif request.form['grouping'] == 'ethnicity':
+            clusters = Recipe.group_on_filters(Ethnicity, *get_filter_args(request))
+            data = package_groups(clusters)
+
+        elif request.form['grouping'] == 'course':
+            clusters = Recipe.group_on_filters(Course, *get_filter_args(request))
+            data = package_groups(clusters)
+
+        elif request.form['grouping'] == 'diet':
+            clusters = Recipe.group_on_filters(Diet, *get_filter_args(request))
+            data = package_groups(clusters)
+
+        elif request.form['grouping'] == 'type':
+            clusters = Recipe.group_on_filters(RecipeType, *get_filter_args(request))
+            data = package_groups(clusters)
+        else:
+            data = 'error'
+
+        return json.dumps(data)
 
 
 @app.route('/search/ingredients', methods=['POST'])
