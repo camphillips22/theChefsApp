@@ -23,11 +23,10 @@ def package_groups(groups):
     return {
         "results": [
             {
-                row.gname: [
-                    {"id": id, "name": name}
-                    for id, name in zip(row.rid, row.rname)
-                ]
-            } for idx, row in groups.iterrows()
+                'gid': row[0],
+                'gname': row[1],
+                'count': row[2]
+            } for row in groups
         ]
     }
 
@@ -84,23 +83,23 @@ def filter_with_cluster():
             data = package_clusters(clusters)
 
         elif request.form['grouping'] == 'occasion':
-            clusters = Recipe.group_on_filters(Occasion, *get_filter_args(request))
+            clusters = Recipe.filter_multiple_with_other_counts(Occasion, *get_filter_args(request))
             data = package_groups(clusters)
 
         elif request.form['grouping'] == 'ethnicity':
-            clusters = Recipe.group_on_filters(Ethnicity, *get_filter_args(request))
+            clusters = Recipe.filter_multiple_with_other_counts(Ethnicity, *get_filter_args(request))
             data = package_groups(clusters)
 
         elif request.form['grouping'] == 'course':
-            clusters = Recipe.group_on_filters(Course, *get_filter_args(request))
+            clusters = Recipe.filter_multiple_with_other_counts(Course, *get_filter_args(request))
             data = package_groups(clusters)
 
         elif request.form['grouping'] == 'diet':
-            clusters = Recipe.group_on_filters(Diet, *get_filter_args(request))
+            clusters = Recipe.filter_multiple_with_other_counts(Diet, *get_filter_args(request))
             data = package_groups(clusters)
 
         elif request.form['grouping'] == 'type':
-            clusters = Recipe.group_on_filters(RecipeType, *get_filter_args(request))
+            clusters = Recipe.filter_multiple_with_other_counts(RecipeType, *get_filter_args(request))
             data = package_groups(clusters)
         else:
             data = 'error'
