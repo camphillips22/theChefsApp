@@ -202,8 +202,8 @@ class Recipe(db.Model):
         return db.session.query(
             sq.c.id,
             sq.c.name,
-            other_class.id,
-            other_class.name
+            other_class.id.label('gid'),
+            other_class.name.label('gname')
         ).join(
             assoc_table,
             sq.c.id == assoc_table.columns.recipe_id
@@ -211,6 +211,11 @@ class Recipe(db.Model):
             other_class,
             other_class.id == assoc_table.columns[col_name]
         )
+
+    @classmethod
+    def filter_multiple_with_other_counts(cls, other_class, *args):
+        sq = cls.filter_multiple_with_other(other_class, *args).subquery()
+        return db.session.query(sq.c.gid, sq.c.gname, db.func.count(sq.c.id)).group_by(sq.c.gid)
 
     @classmethod
     def cluster_on_filters(cls, clust_fact, *args):
