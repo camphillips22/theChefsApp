@@ -14,36 +14,42 @@
 <div class="filter-sidebar">
   <h2>Filter Recipes</h2>
   <form id="filter_form" class="form">
-  {% for id, model in models %}
-  <div class="form-group">
-    <select id="{{ id }}_select" name="{{id}}" class="form-control" multiple="multiple">
-      <option value=""></option>
-      {% for item in model %}
-        <option value="{{item.id}}">{{ item.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  {% endfor %}
-  <div class="form-group">
-    <select id="ingredient_name" name="ingredient" multiple="multiple">
-    {% for model in ingredients %}
-      <option value="{{model.id}}">{{ model.name }}</option>
+    {% for id, model in models %}
+    <div class="form-group">
+      <select id="{{ id }}_select" name="{{id}}" class="form-control" multiple="multiple">
+        <option value=""></option>
+        {% for item in model %}
+          <option value="{{item.id}}">{{ item.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
     {% endfor %}
-    </select>
-  </div>
-  <div class="form-group">
-    <label class="control-label" for="grouping_select">Grouping</label>
-    <select id="grouping_select" name="grouping">
-      <option value="similarity">Similarity</option>
-      <option value="occasion">Occasion</option>
-      <option value="course">Course</option>
-      <option value="ethnicity">Ethnicity</option>
-      <option value="diet">Diet</option>
-      <option value="type">Recipe Type</option>
-    </select>
-  </div>
-  <button id="submit_filter" class="btn btn-primary">Submit Filters</button>
-</form>
+    <div class="form-group">
+      <select id="ingredient_name" name="ingredient" multiple="multiple">
+      {% for model in ingredients %}
+        <option value="{{model.id}}">{{ model.name }}</option>
+      {% endfor %}
+      </select>
+    </div>
+    <button id="submit_filter" class="btn btn-primary">Submit Filters</button>
+  </form>
+  <div>
+    <h3>Hierarchy Order</h3>
+    <ul id="group_order" class="list-group">
+      <li class="list-group-item tile grabbable" name="ethnicity">
+        <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
+        Ethnicity
+      </li>
+      <li class="list-group-item tile grabbable" name="course">
+        <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
+        Course
+      </li>
+      <li class="list-group-item tile grabbable" name="occasion">
+        <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
+        Occasion
+      </li>
+    </ul>
+</div>
 </div>
 {% endblock sidebar %}
 
@@ -54,6 +60,43 @@
 {% block javascripts %}
 {{ super() }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script src="http://rubaxa.github.io/Sortable/Sortable.js"></script>
+<script>
+
+function updateFilterNames() {
+  $(".hidden_filter").each(function(idx) {
+    console.log("updating " + idx);
+    $("#groupfilt_" + idx)
+      .attr("name",
+        $("#group_order li:nth-child(" + (idx+1) + ")").attr("name")
+      );
+  });
+}
+
+function appendFilter(id, name) {
+  var len = $(".hidden_filter").length;
+  var group_order_item = $("#group_order li:nth-child(" + (len+1) +  ")");
+  $("<input />").attr("type", "hidden")
+    .addClass("hidden_filter")
+    .attr("name", group_order_item.attr("name"))
+    .attr("value", id)
+    .attr("id", "groupfilt_" + len)
+    .appendTo("#filter_form");
+
+  group_order_item.removeClass("tile grabbable");
+  $("#group_order li:nth-child(" + (len+1) +  ") span").css("visibility", "hidden");
+}
+
+function popFilter() {
+  var len = $(".hidden_filter").length;
+  if (len) {
+    $("#groupfilt_" + (len - 1)).remove();
+    $("#group_order li:nth-child(" + (len) + ")").addClass("tile grabbable");
+    $("#group_order li:nth-child(" + (len) +  ") span").css("visibility", "visible");
+  }
+}
+
+</script>
 <script>
   $(document).ready(function() {
     {% for id, model in models %}
@@ -62,6 +105,13 @@
       width: '100%'
     });
     {% endfor %}
+
+    var list = document.getElementById("group_order");
+    Sortable.create(list, {
+      animation: 150,
+      onUpdate: updateFilterNames,
+      draggable: ".tile"
+      });
 
     $("#grouping_select").select2({
       placeholder: "Select grouping...",
