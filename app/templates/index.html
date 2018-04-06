@@ -133,6 +133,16 @@ function popFilter() {
 
     $("#filter_form").submit(function(e) {
       e.preventDefault();
+
+      var len = $(".hidden_filter").length;
+      var group_order_item = $("#group_order li:nth-child(" + (len+1) +  ")");
+      $("<input />").attr("type", "hidden")
+        .addClass("grouping_filter")
+        .attr("value", group_order_item.attr("name"))
+        .attr("name", "grouping")
+        .attr("id", "groupfilter")
+        .appendTo("#filter_form");
+
       $.ajax({
         type: "POST",
         url: "{{ url_for('filter_with_cluster') }}",
@@ -141,7 +151,10 @@ function popFilter() {
           console.log(JSON.parse(response));
         },
       });
+      $(".grouping_filter").remove();
     });
+
+    $("#filter_form").submit();
   });
 </script>
 {% endblock %}
