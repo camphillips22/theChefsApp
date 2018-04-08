@@ -2,12 +2,12 @@
 
 {% block content %}
   <div id="graph"></div>
-	<svg width="960" height="960" font-family="sans-serif" font-size="10" text-anchor="middle"></svg>
 {% endblock %}
 
 {% block javascripts %}
 {{ super() }}
   <script src="https://d3js.org/d3.v3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
 	<script>
     var margin = {top: 0, bottom: 20, left: 100, right: 100},
       width = 960,
@@ -17,17 +17,19 @@
       .attr("height", height + margin.top + margin.bottom)
       .attr("width", width + margin.right + margin.left)
     .append("g")
-      .attr("transform", "translate(" + [margin.left, margin.right] + ")");
-
-    var text_corner = svg.append("text")
-      .style("text-anchor", "start")
-      .style("alignment-baseline", "hanging")
-      .attr("dy", 10);
+      .attr("transform", "translate(" + [margin.left, margin.top] + ")");
 
 		var pack = d3.layout.pack()
         .sort(function(a, b) { return b.value - a.value;})
 		    .size([width-20, height-20])
 		    .padding(4);
+
+    tip = d3.tip().attr('class', 'd3-tip')
+      .html(function(d) { return d.name; })
+      .offset([-10, 0])
+      .direction(function(d) { return (this.getBBox().y > 0) ? 's' : 'n';})
+
+    svg.call(tip);
 
 		d3.json("/static/load.json", function(json_data){
 
@@ -38,9 +40,6 @@
 				d.name = Object.keys(d)[0];
 				d.value = d[Object.keys(d)[0]].length;
 			})
-
-		/*var root = d3.layout.hierarchy({children: data})
-    	.sum(function(d) { return d.value; })*/
 
     	root = {
     		name: 'root',
@@ -73,31 +72,8 @@
       })
       .attr("dy", ".35em");
 
-    node.on("mouseover", function(d) {
-      text_corner.text(d3.select(this).select("text").text());
-
-      d3.select(this).select("text")
-        .style("opacity", 1)
-        .style("font-size", function (d) {
-          return (d.r <= 10) ? "50px" : d3.select(this).style("font-size");
-        })
-        .attr("dy", function(d) {
-          return (d.r <= 10) ? -10 : 0;
-        })
-      });
-
-		node.on("mouseout", function(d) {
-      text_corner.text("");
-      d3.select(this).select("text")
-        .style("opacity", function(d) { return (d.r > 10) ? 1 : 0; })
-        .style("font-size", function(d) {
-          if (d.r <= 10) {
-            return Math.min(2*d.r, (2*d.r - 8) / this.getComputedTextLength()*24) + "px";
-          } else {
-            return d3.select(this).style("font-size");
-          };
-        });
-      });
+    node.on("mouseover", tip.show);
+		node.on("mouseout", tip.hide);
     });
 
 	</script>
