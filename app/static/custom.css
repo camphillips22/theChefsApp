@@ -58,7 +58,7 @@
 
 .group:hover circle {
   stroke: steelblue;
-  stroke-width: 5px;
+  stroke-width: 3px;
 }
 
 text {

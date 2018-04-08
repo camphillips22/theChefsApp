@@ -6,7 +6,7 @@
 
 {% block stylesheets %}
 {{ super() }}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet"/>
 <link href="{{ url_for('static', filename='custom.css') }}" rel="stylesheet"/>
 {% endblock %}
 
@@ -54,13 +54,16 @@
 {% endblock sidebar %}
 
 {% block content %}
-  
+  <div id="graph"></div>
 {% endblock content %}
 
 {% block javascripts %}
 {{ super() }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script src="http://rubaxa.github.io/Sortable/Sortable.js"></script>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
+<script src="{{ url_for('static', filename='graph.js') }}"></script>
 <script>
 
 function updateFilterNames() {
@@ -96,9 +99,16 @@ function popFilter() {
   }
 }
 
+function submitFilters() {
+  $("#filter_form").submit();
+}
+
 </script>
 <script>
   $(document).ready(function() {
+
+    initGraph();
+
     {% for id, model in models %}
     $("#{{ id }}_select").select2({
       placeholder: "Select {{ id }}...",
@@ -148,7 +158,9 @@ function popFilter() {
         url: "{{ url_for('filter_with_cluster') }}",
         data: $("#filter_form").serialize(),
         success: function(response) {
-          console.log(JSON.parse(response));
+          var data = JSON.parse(response);
+          console.log(data);
+          onGroupData(data);
         },
       });
       $(".grouping_filter").remove();
