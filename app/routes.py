@@ -51,7 +51,7 @@ def index():
     occasions = Occasion.query.all()
 
     return render_template(
-        'index.html',
+        'vis.html',
         courses=courses,
         ethnicities=ethnicities,
         occasions=occasions,
