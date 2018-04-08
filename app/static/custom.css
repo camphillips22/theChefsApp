@@ -46,3 +46,23 @@
     cursor: -moz-grabbing;
     cursor: -webkit-grabbing;
 }
+
+.group {
+  cursor: pointer;
+}
+
+.group circle {
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.group:hover circle {
+  stroke: steelblue;
+  stroke-width: 5px;
+}
+
+text {
+  font: 24px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-anchor: middle;
+  pointer-events: none;
+}
