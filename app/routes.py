@@ -12,11 +12,10 @@ def package_clusters(clusters):
             {
                 'id': str(group),
                 'name': '',
-                'recipes': [
-                    {"id": row.name, "name": row.rname}
-                    for idx, row in clusters.get_group(group).iterrows()
-                ]
+                'recipe_id': row.name,
+                'recipe_name':row.rname
             } for group in clusters.groups.keys()
+            for idx, row in clusters.get_group(group).iterrows()
         ]
     }
 

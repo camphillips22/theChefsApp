@@ -160,7 +160,10 @@ function submitFilters() {
         success: function(response) {
           var data = JSON.parse(response);
           console.log(data);
-          onGroupData(data);
+          if (data.results[0].name == '')
+            showRecipes(data);
+          else
+            onGroupData(data);
         },
       });
       $(".grouping_filter").remove();
