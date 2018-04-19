@@ -60,7 +60,7 @@
 {% block javascripts %}
 {{ super() }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-<script src="http://rubaxa.github.io/Sortable/Sortable.js"></script>
+<script src="{{url_for('static', filename='Sortable.js')}}"></script>
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
 <script src="{{ url_for('static', filename='graph.js') }}"></script>
@@ -157,8 +157,7 @@ function submitFilters() {
         type: "POST",
         url: "{{ url_for('filter_with_cluster') }}",
         data: $("#filter_form").serialize(),
-        success: function(response) {
-          var data = JSON.parse(response);
+        success: function(data) {
           console.log(data);
           if (data.results[0].name == '')
             showRecipes(data);

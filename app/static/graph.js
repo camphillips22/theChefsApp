@@ -29,6 +29,27 @@ function initGraph() {
     svg.call(rec_tip);
 }
 
+function sizeText(texts, dur, delay) {
+
+  texts
+    .style("opacity", 0)
+    .text(function(d) { return d.recipe_name || d.name; })
+    .attr("dy", ".35em")
+    .style("font-size", "")
+    .call(wrap);
+
+  texts
+    .style("font-size", function(d) {
+      var bb = this.getBBox();
+      return Math.min(2*d.r, (2*d.r - 8) / Math.hypot(bb.width, bb.height)*24) + "px";
+    }).attr("y", function(d) {
+      return -0.5*(d3.select(this).selectAll("tspan").size()-1) + "em";
+    })
+
+  texts.transition().duration(dur).delay(delay)
+    .style("opacity", function(d) {  return d.r > 10 ? 1 : 0;})
+
+}
 
 function onGroupData(data) {
   parsed_data = data["results"];
@@ -56,7 +77,9 @@ function onGroupData(data) {
       .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
   new_nodes.append("circle");
-  new_nodes.append("text");
+  new_nodes.append("text")
+    .style("opacity", 0)
+    .attr("dy", ".35em");
 
   node.exit().transition().duration(500)
     .attr("transform", function(d) { return "translate(" + d.x + "," + -100 + ")"; })
@@ -67,23 +90,17 @@ function onGroupData(data) {
 
   node.select("circle")
     .attr("id", function(d) { return d.id; })
-    .attr("r", function(d) { return d.r; })
-    .style("fill", "rgba(31, 119, 180, 0)")
+    .style("fill", "#FFFFFF")
     .style("stroke", "black")
     .on("click", function(d) {
       appendFilter(d.id, d.name);
       submitFilters();
     });
 
-  node.select("text").style("font-size", "");
+  node.select("circle").transition().duration(1000)
+    .attr("r", function(d) { return d.r; })
 
-  node.select("text")
-    .text(function(d) { return d.name; })
-    .style("opacity", function(d) {  return d.r > 10 ? 1 : 0;})
-    .style("font-size", function(d) {
-          return Math.min(2*d.r, (2*d.r - 8) / this.getComputedTextLength()*24) + "px";
-    })
-    .attr("dy", ".35em");
+  sizeText(node.select("text"), 200, 700);
 
   node.on("mouseover", tip.show);
   node.on("mouseout", tip.hide);
@@ -97,17 +114,16 @@ function wrap(text) {
         line = [],
         lineNumber = 0,
         lineHeight = 1.1, // ems
-        y = text.attr("y"),
         dy = parseFloat(text.attr("dy")),
-        tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+        tspan = text.text(null).append("tspan").attr("x", 0).attr("dy", dy + "em");
     while (word = words.pop()) {
       line.push(word);
       tspan.text(line.join(" "));
-      if (tspan.node().getComputedTextLength() > 2*text.datum().r) {
+      if (tspan.node().getComputedTextLength() > 2*text.datum().r && words.length) {
         line.pop();
         tspan.text(line.join(" "));
         line = [word];
-        tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", lineHeight + "em").text(word);
+        tspan = text.append("tspan").attr("x", 0).attr("dy", lineHeight + "em").text(word);
       }
     }
   });
@@ -134,87 +150,66 @@ function showRecipes(data) {
   new_pack = d3.layout.pack()
     .sort(null)
     .size([width, height])
+    .padding(4)
     .children(function(d) { return d.values; })
     .value(function(d) { return d.radius * d.radius; });
   new_pack
     .nodes({values: nested});
 
-  svg.selectAll(".group").data([]).exit().remove();
-
   node = svg.selectAll(".group")
     .data(nodes)
+
+  node.exit().transition().duration(500)
+    .attr("transform", function(d) { return "translate(" + d.x + "," + -100 + ")"; })
+    .remove();
+  node.transition()
+    .duration(1000)
+    .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
 
   var new_nodes = node.enter().append("g")
       .attr("class", "group")
       .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
 
   new_nodes.append("circle")
-    .style("fill", function(d) { return color(d.cluster); });
   new_nodes.append("text");
 
-  node.select("circle")
+  node.select("circle").transition().duration(500)
     .attr("r", function(d) {return d.r})
+    .style("stroke", "black")
+    .style("fill", function(d) { return color(d.cluster); });
+
+  node.select("circle")
     .on("mouseover", rec_tip.show)
-    .on("mouseout", rec_tip.hide);
-/*
-  node.transition()
-    .duration(750)
-    .delay(function(d, i) { return i * 5; })
-    .attrTween("r", function(d) {
-      var i = d3.interpolate(0, d.r);
-      return function(t) { return d.r = i(t); };
-    });
-*/
- node.select("text").style("font-size", "");
+    .on("mouseout", rec_tip.hide)
+    .on("click", rec_tip.hide);
 
-  node.select("text")
-    .text(function(d) { return d.recipe_name; })
-    .style("opacity", function(d) {  return d.r > 10 ? 1 : 0;})
-    .attr("dy", "0em")
-    .call(wrap);
-
-   node.select("text").style("font-size", "");
-  node.select("text")
-    .attr("y", function(d) {
-      return -0.5*(d3.select(this).selectAll("tspan").size()-1) + "em";
-    }).style("font-size", function(d) {
-      return Math.min(2*d.r, (2*d.r - 8) / this.getComputedTextLength()*24) + "px";
-    })
+  sizeText(node.select("text"), 200, 500);
 
   node.on("mouseover", onMouseOver);
   node.on("mouseout", onMouseOut);
   node.on("click", onClick);
 
   function onClick(d, i) {
-  if (d._r) {
-    d.r = d._r;
-    d._r = null;
-  } else {
-    d._r = d.r;
-    d.r = 150;
-    svg.selectAll(".group").sort(function (a, b) {
-      if (a._r) return 1;
-      else return -1;
-    });
-  }
+    if (d._r) {
+      d.r = d._r;
+      d._r = null;
+    } else {
+      d._r = d.r;
+      d.r = 150;
+      svg.selectAll(".group").sort(function (a, b) {
+        if (a._r) return 1;
+        else return -1;
+      });
+    }
 
-
-    node.select("circle").transition().duration(300)
+    d3.select(this).select("circle").transition().duration(300)
     .attr("r", function(d) { return d.r;});
+
+    sizeText(d3.select(this).select("text"), 200, 100);
   }
 
 
   function onMouseOver(d, i) {
-
-/*
-    new_pack.nodes({values: nested})
-  var node = d3.selectAll(".group").data(nodes);
-  node.transition()
-    .duration(300)
-    .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
-    */
-
-
   }
 
   function onMouseOut(d, i) {
@@ -223,14 +218,8 @@ function showRecipes(data) {
       d._r = null;
     }
 
-    /*
-  new_pack.nodes({values: nested});
-  var node = d3.selectAll(".group").data(nodes);
-  node.transition()
-    .duration(300)
-    .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
-*/
-  node.select("circle").transition().duration(300)
-    .attr("r", function(d) { return d.r;});
+    d3.select(this).select("circle").transition().duration(300)
+      .attr("r", function(d) { return d.r;});
+    sizeText(d3.select(this).select("text"), 0, 0);
   }
 }

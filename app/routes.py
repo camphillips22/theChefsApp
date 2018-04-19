@@ -1,4 +1,4 @@
-from flask import render_template, request
+from flask import render_template, request, jsonify
 import json
 
 from app import app
@@ -30,7 +30,8 @@ def package_group_recs(groups):
                     for id, name in zip(row.rid, row.rname)
                 ]
             } for idx, row in groups.iterrows()
-        ]
+        ],
+        "recipe_count": int(groups.size)
     }
 
 def package_groups(groups):
@@ -86,7 +87,7 @@ def filter_recipes():
             Ingredient, [int(id) for id in request.form.getlist('ingredient')]
         ).limit(5000).all()
         data = {"results": [{"id": rec.id, "name": rec.name} for rec in result]}
-        return json.dumps(data)
+        return jsonify(data)
 
 
 @app.route('/cluster_filter', methods=['POST'])
@@ -118,11 +119,11 @@ def filter_with_cluster():
         else:
             data = 'error'
 
-        if data == 'error' or len(data['results']) == 0:
+        if data == 'error' or data['recipe_count'] < 20:
             clusters = Recipe.cluster_on_filters(0.7, *get_filter_args(request))
             data = package_clusters(clusters)
 
-        return json.dumps(data)
+        return jsonify(data)
 
 
 @app.route('/search/ingredients', methods=['POST'])
@@ -132,4 +133,4 @@ def search_ingredients():
             Ingredient.name.contains(request.form['q'])
         ).all()
         data = {"results": [{'id': ing.id, "text": ing.name} for ing in ings]}
-        return json.dumps(data)
+        return jsonify(data)

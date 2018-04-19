@@ -144,7 +144,7 @@ class Recipe(db.Model):
         ).group_by(
             cls.id
         ).having(
-            db.func.count(other_class.id) > (len(filt_list)-1)
+            db.func.count(other_class.id) > 0
         )
 
     @classmethod
