@@ -27,7 +27,10 @@ function initGraph() {
       .direction(function(d) { return (this.getBBox().y > 0) ? 's' : 'n';})
 
     svg.call(rec_tip);
+
+    slice_size = 7;
 }
+
 
 function sizeText(texts, dur, delay) {
 
@@ -128,17 +131,67 @@ function wrap(text) {
   });
 }
 
-function showRecipes(data) {
+function sliceNodes(which_slice, clust) {
+  d3.map(nodes, function(d) { d.visible = false;});
+  return d3.nest()
+    .key(function(d) { return d.id;})
+    .rollup(function(v) {
+      var idx = slice_size*Math.min(Math.floor((v.length-1)/slice_size), which_slice);
+      var sliced = v.slice(idx, idx+slice_size);
+      d3.map(sliced, function(d) { d.visible = true;});
+      return sliced;})
+    .entries(nodes);
+}
+
+function updateSlice(which_slice, clust) {
   tip.hide();
+  nested = sliceNodes(which_slice, clust);
+
+  cluster_pack.nodes({values: nested});
+
+  view_nodes = nodes.filter(function(d) { return d.visible;})
+
+  node = svg.selectAll(".group")
+    .data(view_nodes)
+
+  node.exit().selectAll("circle, text").transition().duration(500)
+    .attr("transform", "scale(0, 1)");
+
+  node.selectAll("circle, text")
+    .attr("transform", "scale(1, 1)")
+  node.transition()
+    .duration(1000)
+    .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+
+  var changed_nodes = node.filter(function(d) {
+    var name = d.name || d.recipe_name;
+    var txt = d3.select(this).select("text").text();
+    return txt == '' || txt.replace(/\s+/g, '') != name.replace(/\s+/g, '')})
+
+  changed_nodes.selectAll("circle").transition().delay(500).duration(500)
+    .attr("transform", "scale(1, 1)")
+    .attr("opacity", 1);
+
+  sizeText(changed_nodes.select("text"), 300, 700);
+
+  changed_nodes.select("circle").transition().duration(1000)
+    .attr("transform", "scale(-1, 1)")
+    .attr("r", function(d) {return d.r})
+    .style("fill", function(d) { return color(d.cluster); })
+    .transition().duration(0).attr("transform", "scale(1,1)");
+
+
+}
+
+function showRecipes(data, which_slice) {
   nodes = data['results'];
   var padding = 4, // separation between same-color nodes
     clusterPadding = 6, // separation between different-color nodes
     maxRadius = 12;
 
-  d3.map(nodes, function(d) { d.radius = 5; d.cluster = parseInt(d.id)+1;});
-  nested = d3.nest()
-    .key(function(d) { return d.id;})
-    .entries(nodes);
+  d3.map(nodes, function(d) { d.radius = 5; d.visible = false; d.cluster = parseInt(d.id)+1;});
+
+  nested = sliceNodes(which_slice);
 
   var clusters = new Array(nested.length);
   nested.map(function(d) { clusters[+d.key + 1] = d.values[0]})
@@ -158,17 +211,20 @@ function showRecipes(data) {
       .domain(d3.range(nested.length))
       .range(colors);
 
-  new_pack = d3.layout.pack()
+  cluster_pack = d3.layout.pack()
     .sort(null)
     .size([width, height])
     .padding(4)
     .children(function(d) { return d.values; })
     .value(function(d) { return d.radius * d.radius; });
-  new_pack
+
+  cluster_pack
     .nodes({values: nested});
 
+  view_nodes = nodes.filter(function(d) { return d.visible;})
+
   node = svg.selectAll(".group")
-    .data(nodes)
+    .data(view_nodes)
 
   node.exit().transition().duration(500)
     .attr("transform", function(d) { return "translate(" + d.x + "," + -100 + ")"; })

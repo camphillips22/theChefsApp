@@ -161,7 +161,7 @@ function submitFilters() {
         success: function(data) {
           console.log(data);
           if (data.results[0].name == '')
-            showRecipes(data);
+            showRecipes(data, 0);
           else
             onGroupData(data);
         },
