@@ -52,12 +52,10 @@
 }
 
 .group circle {
-  stroke: steelblue;
-  stroke-width: 1.5px;
 }
 
 .group:hover circle {
-  stroke: steelblue;
+  stroke: #606060;
   stroke-width: 3px;
 }
 

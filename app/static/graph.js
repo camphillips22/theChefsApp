@@ -90,8 +90,7 @@ function onGroupData(data) {
 
   node.select("circle")
     .attr("id", function(d) { return d.id; })
-    .style("fill", "#FFFFFF")
-    .style("stroke", "black")
+    .style("fill", "#CDCDCD")
     .on("click", function(d) {
       appendFilter(d.id, d.name);
       submitFilters();
@@ -175,7 +174,6 @@ function showRecipes(data) {
 
   node.select("circle").transition().duration(500)
     .attr("r", function(d) {return d.r})
-    .style("stroke", "black")
     .style("fill", function(d) { return color(d.cluster); });
 
   node.select("circle")
