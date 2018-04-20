@@ -28,7 +28,6 @@ function initGraph() {
 
     svg.call(rec_tip);
 
-    slice_size = 7;
 }
 
 
@@ -130,18 +129,18 @@ function wrap(text) {
   });
 }
 
-function sliceNodes() {
+function pageNodes() {
   return d3.nest()
     .key(function(d) { return d.id;})
     .rollup(function(v) {
-      var sliced = v.filter(function(d) { return d.slice == active_slices[d.cluster].current; })
-      return sliced;})
+      var paged = v.filter(function(d) { return d.page == active_pages[d.cluster].current; })
+      return paged;})
     .entries(nodes);
 }
 
-function updateSlice(which_slice, clust) {
+function updatePage(clust, page) {
   tip.hide();
-  active_slices[clust].current = Math.min(active_slices[clust].max, which_slice);
+  active_pages[clust].current = Math.min(active_pages[clust].max, page);
 
   var cnode_select = d3.selectAll(".group")
     .filter(function(d) {return d.cluster==clust;});
@@ -149,7 +148,7 @@ function updateSlice(which_slice, clust) {
   cnode = cnode_select
     .data(
       nodes.filter(function(d) {
-        return d.cluster == clust && d.slice == active_slices[clust].current})
+        return d.cluster == clust && d.page == active_pages[clust].current})
     );
 
   cnode.exit().selectAll("circle, text").transition().duration(500)
@@ -169,29 +168,54 @@ function updateSlice(which_slice, clust) {
     .transition().duration(0).attr("transform", "scale(1,1)");
 }
 
-function showRecipes(data, which_slice) {
-  tip.hide();
-  nodes = data['results'];
-  var padding = 4, // separation between same-color nodes
-    clusterPadding = 6, // separation between different-color nodes
-    maxRadius = 12;
+function pack_pages(data, page_size) {
 
   var clusterCounters = {};
-  active_slices = {};
 
   d3.map(nodes, function(d) {
     d.radius = 5;
     d.cluster = parseInt(d.id)+1;
     if (!clusterCounters[d.cluster]) {
       clusterCounters[d.cluster] = 0;
-      active_slices[d.cluster] = {max: 0, current: 0};
+      active_pages[d.cluster] = {max: 0, current: 0};
     }
-    d.idx = clusterCounters[d.cluster] % slice_size;
-    d.slice = Math.floor(clusterCounters[d.cluster]++/slice_size);
-    active_slices[d.cluster].max = Math.max(d.slice, active_slices[d.cluster].max);
+    d.idx = clusterCounters[d.cluster] % page_size;
+    d.page = Math.floor(clusterCounters[d.cluster]++/page_size);
+    active_pages[d.cluster].max = Math.max(d.page, active_pages[d.cluster].max);
   });
 
-  nested = sliceNodes();
+  var nested = pageNodes();
+
+  var cluster_pack = d3.layout.pack()
+    .sort(null)
+    .size([width, height])
+    .padding(4)
+    .children(function(d) { return d.values; })
+    .value(function(d) { return d.radius * d.radius; });
+
+  cluster_pack
+    .nodes({values: nested});
+
+  d3.map(nodes, function(d) {
+    if (d.page != 0) {
+      var lnode = nodes.find(function(dd) {
+        return dd.page == 0 && dd.id == d.id && dd.idx === d.idx});
+      d.x = lnode.x;
+      d.y = lnode.y;
+      d.r = lnode.r;
+    }
+  })
+}
+
+function showRecipes(data) {
+  tip.hide();
+  nodes = data['results'];
+  var padding = 4, // separation between same-color nodes
+    clusterPadding = 6, // separation between different-color nodes
+    maxRadius = 12,
+    page_size = 7;
+
+  active_pages = {};
 
   var colors = [
     '#DC4B34',
@@ -204,33 +228,16 @@ function showRecipes(data, which_slice) {
     '#F3CF13'
   ]
 
+  var nClust = d3.map(nodes, function(d) { return d.id; }).size();
+
   color = d3.scale.ordinal()
-      .domain(d3.range(nested.length))
+      .domain(d3.range(nClust))
       .range(colors);
 
-  cluster_pack = d3.layout.pack()
-    .sort(null)
-    .size([width, height])
-    .padding(4)
-    .children(function(d) { return d.values; })
-    .value(function(d) { return d.radius * d.radius; });
-
-  cluster_pack
-    .nodes({values: nested});
-
-  d3.map(nodes, function(d) {
-    if (d.slice != 0) {
-      var lnode = nodes.find(function(dd) {
-        return dd.slice == 0 && dd.id == d.id && dd.idx === d.idx});
-      d.x = lnode.x;
-      d.y = lnode.y;
-      d.r = lnode.r;
-    }
-  })
-
+  pack_pages(nodes, page_size);
 
   view_nodes = nodes.filter(function(d) {
-    return active_slices[d.cluster].current == d.slice;
+    return active_pages[d.cluster].current == d.page;
   })
 
   node = svg.selectAll(".group")
@@ -283,7 +290,6 @@ function showRecipes(data, which_slice) {
 
     sizeText(d3.select(this).select("text"), 200, 100);
   }
-
 
   function onMouseOver(d, i) {
   }
