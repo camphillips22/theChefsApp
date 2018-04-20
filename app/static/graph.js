@@ -143,8 +143,20 @@ function showRecipes(data) {
   var clusters = new Array(nested.length);
   nested.map(function(d) { clusters[+d.key + 1] = d.values[0]})
 
-  color = d3.scale.category10()
-      .domain(d3.range(nested.length));
+  var colors = [
+    '#DC4B34',
+    '#967483',
+    '#CFDF64',
+    '#99CCAB',
+    '#FAEEC5',
+    '#F59192',
+    '#F4B14F',
+    '#F3CF13'
+  ]
+
+  color = d3.scale.ordinal()
+      .domain(d3.range(nested.length))
+      .range(colors);
 
   new_pack = d3.layout.pack()
     .sort(null)

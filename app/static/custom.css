@@ -1,4 +1,10 @@
+body {
+  font-family: "Lato", Arial, "Droid Sans", sans-serif;
+}
 
+text {
+  font-family: "Lato", Arial, "Droid Sans", sans-serif;
+}
 .navbar {
   background: #00263A;
 }
@@ -60,7 +66,7 @@
 }
 
 text {
-  font: 24px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 24px;
   text-anchor: middle;
   pointer-events: none;
 }
