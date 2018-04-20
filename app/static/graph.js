@@ -92,7 +92,6 @@ function onGroupData(data) {
     .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
 
   node.select("circle")
-    .attr("id", function(d) { return d.id; })
     .style("fill", "#CDCDCD")
     .on("click", function(d) {
       appendFilter(d.id, d.name);
@@ -131,70 +130,68 @@ function wrap(text) {
   });
 }
 
-function sliceNodes(which_slice, clust) {
-  d3.map(nodes, function(d) { d.visible = false;});
+function sliceNodes() {
   return d3.nest()
     .key(function(d) { return d.id;})
     .rollup(function(v) {
-      var idx = slice_size*Math.min(Math.floor((v.length-1)/slice_size), which_slice);
-      var sliced = v.slice(idx, idx+slice_size);
-      d3.map(sliced, function(d) { d.visible = true;});
+      var sliced = v.filter(function(d) { return d.slice == active_slices[d.cluster].current; })
       return sliced;})
     .entries(nodes);
 }
 
 function updateSlice(which_slice, clust) {
   tip.hide();
-  nested = sliceNodes(which_slice, clust);
+  active_slices[clust].current = Math.min(active_slices[clust].max, which_slice);
 
-  cluster_pack.nodes({values: nested});
+  var cnode_select = d3.selectAll(".group")
+    .filter(function(d) {return d.cluster==clust;});
 
-  view_nodes = nodes.filter(function(d) { return d.visible;})
+  cnode = cnode_select
+    .data(
+      nodes.filter(function(d) {
+        return d.cluster == clust && d.slice == active_slices[clust].current})
+    );
 
-  node = svg.selectAll(".group")
-    .data(view_nodes)
-
-  node.exit().selectAll("circle, text").transition().duration(500)
+  cnode.exit().selectAll("circle, text").transition().duration(500)
     .attr("transform", "scale(0, 1)");
 
-  node.selectAll("circle, text")
+  cnode.selectAll("circle, text")
     .attr("transform", "scale(1, 1)")
-  node.transition()
-    .duration(1000)
-    .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
 
-  var changed_nodes = node.filter(function(d) {
-    var name = d.name || d.recipe_name;
-    var txt = d3.select(this).select("text").text();
-    return txt == '' || txt.replace(/\s+/g, '') != name.replace(/\s+/g, '')})
-
-  changed_nodes.selectAll("circle").transition().delay(500).duration(500)
+  cnode.selectAll("circle").transition().delay(500).duration(500)
     .attr("transform", "scale(1, 1)")
     .attr("opacity", 1);
 
-  sizeText(changed_nodes.select("text"), 300, 700);
+  sizeText(cnode.select("text"), 300, 700);
 
-  changed_nodes.select("circle").transition().duration(1000)
+  cnode.select("circle").transition().duration(1000)
     .attr("transform", "scale(-1, 1)")
-    .attr("r", function(d) {return d.r})
-    .style("fill", function(d) { return color(d.cluster); })
     .transition().duration(0).attr("transform", "scale(1,1)");
-
-
 }
 
 function showRecipes(data, which_slice) {
+  tip.hide();
   nodes = data['results'];
   var padding = 4, // separation between same-color nodes
     clusterPadding = 6, // separation between different-color nodes
     maxRadius = 12;
 
-  d3.map(nodes, function(d) { d.radius = 5; d.visible = false; d.cluster = parseInt(d.id)+1;});
+  var clusterCounters = {};
+  active_slices = {};
 
-  nested = sliceNodes(which_slice);
+  d3.map(nodes, function(d) {
+    d.radius = 5;
+    d.cluster = parseInt(d.id)+1;
+    if (!clusterCounters[d.cluster]) {
+      clusterCounters[d.cluster] = 0;
+      active_slices[d.cluster] = {max: 0, current: 0};
+    }
+    d.idx = clusterCounters[d.cluster] % slice_size;
+    d.slice = Math.floor(clusterCounters[d.cluster]++/slice_size);
+    active_slices[d.cluster].max = Math.max(d.slice, active_slices[d.cluster].max);
+  });
 
-  var clusters = new Array(nested.length);
-  nested.map(function(d) { clusters[+d.key + 1] = d.values[0]})
+  nested = sliceNodes();
 
   var colors = [
     '#DC4B34',
@@ -221,7 +218,20 @@ function showRecipes(data, which_slice) {
   cluster_pack
     .nodes({values: nested});
 
-  view_nodes = nodes.filter(function(d) { return d.visible;})
+  d3.map(nodes, function(d) {
+    if (d.slice != 0) {
+      var lnode = nodes.find(function(dd) {
+        return dd.slice == 0 && dd.id == d.id && dd.idx === d.idx});
+      d.x = lnode.x;
+      d.y = lnode.y;
+      d.r = lnode.r;
+    }
+  })
+
+
+  view_nodes = nodes.filter(function(d) {
+    return active_slices[d.cluster].current == d.slice;
+  })
 
   node = svg.selectAll(".group")
     .data(view_nodes)
