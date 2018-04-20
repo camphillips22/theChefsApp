@@ -38,16 +38,16 @@
     <ul id="group_order" class="list-group">
       <li class="list-group-item tile grabbable" name="ethnicity">
         <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
-        Ethnicity
-      </li>
+        <span class="glyphicon glyphicon-remove hidden-xs" style="color:red;" aria-hidden="true"></span>Ethnicity</li>
       <li class="list-group-item tile grabbable" name="course">
         <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
-        Course
-      </li>
+        <span class="glyphicon glyphicon-remove hidden-xs" style="color:red" aria-hidden="true"></span>Course</li>
       <li class="list-group-item tile grabbable" name="occasion">
         <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
-        Occasion
-      </li>
+        <span class="glyphicon glyphicon-remove hidden-xs" style="color:red" aria-hidden="true"></span>Occasion</li>
+      <li class="list-group-item tile grabbable" name="type" id ="typeAF">
+        <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
+        <span class="glyphicon glyphicon-remove hidden-xs" style="color:red" aria-hidden="true"></span>Recipe Type</li>      
     </ul>
 </div>
 </div>
@@ -77,6 +77,7 @@ function updateFilterNames() {
 }
 
 function appendFilter(id, name) {
+  
   var len = $(".hidden_filter").length;
   var group_order_item = $("#group_order li:nth-child(" + (len+1) +  ")");
   $("<input />").attr("type", "hidden")
@@ -87,25 +88,72 @@ function appendFilter(id, name) {
     .appendTo("#filter_form");
 
   group_order_item.removeClass("tile grabbable");
-  $("#group_order li:nth-child(" + (len+1) +  ") span").css("visibility", "hidden");
+  group_order_item.addClass("xable");
+  var text = $("#group_order li:nth-child(" + (len+1) +  ")")
+    .find('span')[1]
+    .nextSibling;
+
+  text.textContent += ' = ' + name;
+  $("#" + group_order_item.attr("name") + "_select").prop("disabled", true);
+  group_order_item.children(".glyphicon-resize-vertical").css("visibility", "hidden");
+  $("#group_order li:nth-child(" + (len+1) +  ") .glyphicon-remove").css("visibility", "visible");
+
+
+  for(i = 0; i < len+1; i++) {
+
+    var prev_group_order_item = $("#group_order li:nth-child(" + i +  ") .glyphicon-remove");
+    prev_group_order_item.css("color", "gray");  
+    prev_group_order_item.attr("disabled", true);
+  }
 }
 
 function popFilter() {
+
   var len = $(".hidden_filter").length;
+  console.log(len);
   if (len) {
+    var group_order_item = $("#group_order li:nth-child(" + (len) +  ")");
     $("#groupfilt_" + (len - 1)).remove();
-    $("#group_order li:nth-child(" + (len) + ")").addClass("tile grabbable");
-    $("#group_order li:nth-child(" + (len) +  ") span").css("visibility", "visible");
+    $("#" + group_order_item.attr("name") + "_select").prop("disabled", false);
+    group_order_item.addClass("tile grabbable");
+    group_order_item.removeClass("xable");
+    var text = $("#group_order li:nth-child(" + (len) +  ")")
+      .find('span')[1]
+      .nextSibling;
+
+    text.textContent = String(text.textContent).substring(
+      0,String(text.textContent).indexOf('='));
+
+    group_order_item.children(".glyphicon-resize-vertical").css("visibility", "visible");
+    $("#group_order li:nth-child(" + (len) +  ") .glyphicon-remove").css("visibility", "hidden");
+    console.log(group_order_item);
+
+    var new_top_group_order_item = $("#group_order li:nth-child(" + (len-1) +  ") .glyphicon-remove");
+    new_top_group_order_item.css("color", "red");
+    new_top_group_order_item.attr("disabled", false);
   }
 }
 
 function submitFilters() {
+  
   $("#filter_form").submit();
 }
 
 </script>
 <script>
   $(document).ready(function() {
+
+    $('.glyphicon-remove').click(function() {
+
+      console.log($(this).attr("disabled"));
+      if ($(this).attr("disabled") == 'disabled') {
+
+      } else {
+        
+        popFilter();
+        submitFilters();
+      }
+    });
 
     initGraph();
 
