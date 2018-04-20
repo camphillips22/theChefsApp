@@ -9,6 +9,10 @@ text {
   background: #00263A;
 }
 
+.hidden-xs {
+  visibility: hidden;
+}
+
 .navbar-brand {
   color: #FFFFFF;
 }
