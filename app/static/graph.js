@@ -27,7 +27,9 @@ function initGraph() {
       .direction(function(d) { return (this.getBBox().y > 0) ? 's' : 'n';})
 
     svg.call(rec_tip);
+
 }
+
 
 function sizeText(texts, dur, delay) {
 
@@ -89,7 +91,6 @@ function onGroupData(data) {
     .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
 
   node.select("circle")
-    .attr("id", function(d) { return d.id; })
     .style("fill", "#CDCDCD")
     .on("click", function(d) {
       appendFilter(d.id, d.name);
@@ -128,20 +129,93 @@ function wrap(text) {
   });
 }
 
+function pageNodes() {
+  return d3.nest()
+    .key(function(d) { return d.id;})
+    .rollup(function(v) {
+      var paged = v.filter(function(d) { return d.page == active_pages[d.cluster].current; })
+      return paged;})
+    .entries(nodes);
+}
+
+function updatePage(clust, page) {
+  tip.hide();
+  active_pages[clust].current = Math.min(active_pages[clust].max, page);
+
+  var cnode_select = d3.selectAll(".group")
+    .filter(function(d) {return d.cluster==clust;});
+
+  cnode = cnode_select
+    .data(
+      nodes.filter(function(d) {
+        return d.cluster == clust && d.page == active_pages[clust].current})
+    );
+
+  cnode.exit().selectAll("circle, text").transition().duration(500)
+    .attr("transform", "scale(0, 1)");
+
+  cnode.selectAll("circle, text")
+    .attr("transform", "scale(1, 1)")
+
+  cnode.selectAll("circle").transition().delay(500).duration(500)
+    .attr("transform", "scale(1, 1)")
+    .attr("opacity", 1);
+
+  sizeText(cnode.select("text"), 300, 700);
+
+  cnode.select("circle").transition().duration(1000)
+    .attr("transform", "scale(-1, 1)")
+    .transition().duration(0).attr("transform", "scale(1,1)");
+}
+
+function pack_pages(data, page_size) {
+
+  var clusterCounters = {};
+
+  d3.map(nodes, function(d) {
+    d.radius = 5;
+    d.cluster = parseInt(d.id)+1;
+    if (!clusterCounters[d.cluster]) {
+      clusterCounters[d.cluster] = 0;
+      active_pages[d.cluster] = {max: 0, current: 0};
+    }
+    d.idx = clusterCounters[d.cluster] % page_size;
+    d.page = Math.floor(clusterCounters[d.cluster]++/page_size);
+    active_pages[d.cluster].max = Math.max(d.page, active_pages[d.cluster].max);
+  });
+
+  var nested = pageNodes();
+
+  var cluster_pack = d3.layout.pack()
+    .sort(null)
+    .size([width, height])
+    .padding(4)
+    .children(function(d) { return d.values; })
+    .value(function(d) { return d.radius * d.radius; });
+
+  cluster_pack
+    .nodes({values: nested});
+
+  d3.map(nodes, function(d) {
+    if (d.page != 0) {
+      var lnode = nodes.find(function(dd) {
+        return dd.page == 0 && dd.id == d.id && dd.idx === d.idx});
+      d.x = lnode.x;
+      d.y = lnode.y;
+      d.r = lnode.r;
+    }
+  })
+}
+
 function showRecipes(data) {
   tip.hide();
   nodes = data['results'];
   var padding = 4, // separation between same-color nodes
     clusterPadding = 6, // separation between different-color nodes
-    maxRadius = 12;
+    maxRadius = 12,
+    page_size = 7;
 
-  d3.map(nodes, function(d) { d.radius = 5; d.cluster = parseInt(d.id)+1;});
-  nested = d3.nest()
-    .key(function(d) { return d.id;})
-    .entries(nodes);
-
-  var clusters = new Array(nested.length);
-  nested.map(function(d) { clusters[+d.key + 1] = d.values[0]})
+  active_pages = {};
 
   var colors = [
     '#DC4B34',
@@ -154,21 +228,20 @@ function showRecipes(data) {
     '#F3CF13'
   ]
 
+  var nClust = d3.map(nodes, function(d) { return d.id; }).size();
+
   color = d3.scale.ordinal()
-      .domain(d3.range(nested.length))
+      .domain(d3.range(nClust))
       .range(colors);
 
-  new_pack = d3.layout.pack()
-    .sort(null)
-    .size([width, height])
-    .padding(4)
-    .children(function(d) { return d.values; })
-    .value(function(d) { return d.radius * d.radius; });
-  new_pack
-    .nodes({values: nested});
+  pack_pages(nodes, page_size);
+
+  view_nodes = nodes.filter(function(d) {
+    return active_pages[d.cluster].current == d.page;
+  })
 
   node = svg.selectAll(".group")
-    .data(nodes)
+    .data(view_nodes)
 
   node.exit().transition().duration(500)
     .attr("transform", function(d) { return "translate(" + d.x + "," + -100 + ")"; })
@@ -217,7 +290,6 @@ function showRecipes(data) {
 
     sizeText(d3.select(this).select("text"), 200, 100);
   }
-
 
   function onMouseOver(d, i) {
   }
