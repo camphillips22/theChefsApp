@@ -134,3 +134,23 @@ def search_ingredients():
         ).all()
         data = {"results": [{'id': ing.id, "text": ing.name} for ing in ings]}
         return jsonify(data)
+
+
+@app.route('/get_recipe_info', methods=['POST'])
+def get_recipe_info():
+    if request.method == 'POST':
+        recs = Recipe.query.filter(Recipe.id == int(request.form['recipe_id'])).all()
+        data = {'results': [
+            {
+                'id': r.id,
+                'name': r.name,
+                'courses': [c.name for c in r.courses],
+                'ingredients': [i.name for i in r.ingredients],
+                'occasions': [o.name for o in r.occasions],
+                'diets': [d.name for d in r.diets],
+                'recipe_types': [t.name for t in r.types],
+                'ethnicities': [e.name for e in r.ethnicities],
+            } for r in recs]
+        }
+        return jsonify(data)
+

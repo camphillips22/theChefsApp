@@ -1,13 +1,42 @@
+
+var mymenu = [
+  {
+    title: 'Next Page',
+    action: function(d, i) {
+      updatePage(d.cluster, d.page + 1);
+    },
+    disabled: function(d) { return d.page == active_pages[d.cluster].max;}
+  },
+  {
+    title: 'Previous Page',
+    action: function(d, i) {
+      updatePage(d.cluster, d.page - 1);
+    },
+    disabled: function(d) { return !d.page; }
+  }
+]
+
 function initGraph() {
     var margin = {top: 0, bottom: 20, left: 100, right: 100};
       width = 960,
-      height = 960;
+      height = 750;
 
 		svg = d3.select("#graph").append("svg")
       .attr("height", height + margin.top + margin.bottom)
       .attr("width", width + margin.right + margin.left)
     .append("g")
       .attr("transform", "translate(" + [margin.left, margin.top] + ")");
+
+    var popup = svg.append("g").attr("class", "popup")
+    var poptext = popup.append("text")
+    poptext.attr("y", "1.1em")
+    poptext.append("tspan").attr("id", "ingredients")
+      .attr("x", 0)
+      .attr("dy", "1.1em")
+    poptext.append("tspan").attr("id", "courses")
+      .attr("x", 0)
+      .attr("dy", "1.1em")
+    popup.append("rect");
 
 		pack = d3.layout.pack()
         .sort(function(a, b) { return b.value - a.value;})
@@ -28,8 +57,13 @@ function initGraph() {
 
     svg.call(rec_tip);
 
-}
+    info_tip = d3.tip().attr('class', 'info-tip')
+      .direction(function(d) {return d.x > width/2 ? 'w' : 'e';})
+      .html(function(d) {
+        return d.recipe_info ? d.recipe_info.ingredients.join('<br/>') : null; })
 
+    svg.call(info_tip);
+}
 
 function sizeText(texts, dur, delay) {
 
@@ -54,6 +88,8 @@ function sizeText(texts, dur, delay) {
 }
 
 function onGroupData(data) {
+  tip.hide()
+  rec_tip.hide()
   parsed_data = data["results"];
 
   parsed_data.forEach(function(d) {
@@ -92,6 +128,8 @@ function onGroupData(data) {
 
   node.select("circle")
     .style("fill", "#CDCDCD")
+    .on("mouseover", null)
+    .on("mouseout", null)
     .on("click", function(d) {
       appendFilter(d.id, d.name);
       submitFilters();
@@ -104,6 +142,8 @@ function onGroupData(data) {
 
   node.on("mouseover", tip.show);
   node.on("mouseout", tip.hide);
+  node.on("click", null);
+  node.on("contextmenu", null);
 }
 
 function wrap(text) {
@@ -139,6 +179,7 @@ function pageNodes() {
 }
 
 function updatePage(clust, page) {
+  if (page < 0) return null;
   tip.hide();
   active_pages[clust].current = Math.min(active_pages[clust].max, page);
 
@@ -165,7 +206,8 @@ function updatePage(clust, page) {
 
   cnode.select("circle").transition().duration(1000)
     .attr("transform", "scale(-1, 1)")
-    .transition().duration(0).attr("transform", "scale(1,1)");
+    .transition().duration(0)
+      .attr("transform", "scale(1,1)")
 }
 
 function pack_pages(data, page_size) {
@@ -207,8 +249,10 @@ function pack_pages(data, page_size) {
   })
 }
 
+
 function showRecipes(data) {
   tip.hide();
+  rec_tip.hide()
   nodes = data['results'];
   var padding = 4, // separation between same-color nodes
     clusterPadding = 6, // separation between different-color nodes
@@ -271,11 +315,13 @@ function showRecipes(data) {
   node.on("mouseover", onMouseOver);
   node.on("mouseout", onMouseOut);
   node.on("click", onClick);
+  node.on("contextmenu", d3.contextMenu(mymenu));
 
-  function onClick(d, i) {
+  function onClick(d) {
     if (d._r) {
       d.r = d._r;
       d._r = null;
+      info_tip.hide();
     } else {
       d._r = d.r;
       d.r = 150;
@@ -283,6 +329,15 @@ function showRecipes(data) {
         if (a._r) return 1;
         else return -1;
       });
+
+      var group = d3.select(this).node();
+
+      $.post({
+        url: '/get_recipe_info',
+        data: 'recipe_id=' + d.recipe_id,
+        success: function(msg) { d.recipe_info = msg['results'][0]; info_tip.show(d, i, group) ;}
+      });
+
     }
 
     d3.select(this).select("circle").transition().duration(300)
@@ -298,10 +353,10 @@ function showRecipes(data) {
     if (d._r) {
       d.r = d._r;
       d._r = null;
+      info_tip.hide();
+      d3.select(this).select("circle").transition().duration(300)
+        .attr("r", function(d) { return d.r;});
+      sizeText(d3.select(this).select("text"), 0, 0);
     }
-
-    d3.select(this).select("circle").transition().duration(300)
-      .attr("r", function(d) { return d.r;});
-    sizeText(d3.select(this).select("text"), 0, 0);
   }
 }

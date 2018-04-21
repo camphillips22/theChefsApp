@@ -8,6 +8,7 @@
 {{ super() }}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet"/>
 <link href="{{ url_for('static', filename='custom.css') }}" rel="stylesheet"/>
+<link href="{{ url_for('static', filename='d3-context-menu.css') }}" rel="stylesheet"/>
 <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
 {% endblock %}
 
@@ -64,6 +65,7 @@
 <script src="{{url_for('static', filename='Sortable.js')}}"></script>
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
+<script src="{{ url_for('static', filename='d3-context-menu.js')}}"></script>
 <script src="{{ url_for('static', filename='graph.js') }}"></script>
 <script>
 
