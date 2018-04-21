@@ -16,7 +16,9 @@ def package_clusters(clusters):
                 'recipe_name':row.rname
             } for group in clusters.groups.keys()
             for idx, row in clusters.get_group(group).iterrows()
-        ]
+        ],
+        "recipe_count": int(sum([g.size for idx, g in clusters])),
+        "type": "clustered",
     }
 
 def package_group_recs(groups):
@@ -31,7 +33,8 @@ def package_group_recs(groups):
                 ]
             } for idx, row in groups.iterrows()
         ],
-        "recipe_count": int(groups.size)
+        "recipe_count": int(groups.size),
+        "type": "grouped",
     }
 
 def package_groups(groups):
@@ -119,7 +122,7 @@ def filter_with_cluster():
         else:
             data = 'error'
 
-        if data == 'error' or data['recipe_count'] < 20:
+        if data == 'error' or (data['recipe_count'] < 20 and data['type'] != 'clustered'):
             clusters = Recipe.cluster_on_filters(0.7, *get_filter_args(request))
             data = package_clusters(clusters)
 

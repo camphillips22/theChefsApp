@@ -16,6 +16,34 @@ var mymenu = [
   }
 ]
 
+
+var cluster_menu = [
+  {
+    title: function(d) {
+      if(d.value > 3000) return 'Get Clusters (too big to cluster)';
+      else return 'Get Clusters';
+    },
+    action: function(d, i) {
+      appendFilter(d.id, d.name);
+      var form_dat = $("#filter_form").serialize();
+      form_dat += (form_dat.length > 0 ? "&" : "") + "grouping=similarity";
+      $.ajax({
+        type: "POST",
+        url: "/cluster_filter",
+        data:  form_dat,
+        success: function(data) {
+          console.log(data);
+          if (data.results[0].name == '')
+            showRecipes(data);
+          else
+            onGroupData(data);
+        },
+      });
+    },
+    disabled: function(d, i) { return d.value > 3000}
+  },
+]
+
 function initGraph() {
     var margin = {top: 0, bottom: 20, left: 100, right: 100};
       width = 960,
@@ -143,7 +171,7 @@ function onGroupData(data) {
   node.on("mouseover", tip.show);
   node.on("mouseout", tip.hide);
   node.on("click", null);
-  node.on("contextmenu", null);
+  node.on("contextmenu", d3.contextMenu(cluster_menu));
 }
 
 function wrap(text) {
