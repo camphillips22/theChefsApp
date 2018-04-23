@@ -16,12 +16,14 @@ var mymenu = [
   }
 ]
 
+var tourComplete = false;
+var tourStarted = false;
 
 var cluster_menu = [
   {
     title: function(d) {
-      if(d.value > 3000) return 'Get Clusters (too big to cluster)';
-      else return 'Get Clusters';
+      if(d.value > 3000) return 'Too many recipes to show. Choose another bubble first.';
+      else return 'View Recipes';
     },
     action: function(d, i) {
       appendFilter(d.id, d.name);
@@ -43,6 +45,141 @@ var cluster_menu = [
     disabled: function(d, i) { return d.value > 3000}
   },
 ]
+
+function startTour() {
+
+    var tour = {
+      id: "hopscotch-tour",
+      showPrevButton: "true",
+      nextOnTargetClick: "true",
+      onEnd: function() {
+        tourComplete = true;
+      },
+      onClose: function() {
+        tourComplete = true;
+      },   
+      onStart: function() {
+        tourStarted = true;
+      },            
+      steps: [
+        {
+          title: "Welcome to The Chef's App",
+          content: "This tutorial will guide you through the features of this tool. If you close this tutorial by accident, just reload the page to walk through it again. Click Next to continue.",
+          target: "#app_name",
+          placement: "right"
+        },
+        {
+          title: "About this tool",
+          content: "This tool is the product of a research effort at the Georgia Institute of Technology. Our goal is to help people explore the enormous number of recipes out there, and help them plan exciting, healthy meals, and show them foods they didn't even know they wanted!",
+          target: "#app_name",
+          placement: "right"
+        },
+        {
+          title: "About this tool",
+          content: "Because this is a research-grade tool, you may experience bugs or slow loading. Also, please note that our recipe details currently only show ingredients, but not the cooking method.",
+          target: "#app_name",
+          placement: "right"
+        },                 
+        {
+          title: "Filtering Recipes",
+          content: "You can start typing in any of these boxes to filter recipes. If you have a dietary restriction, enter it here.",
+          target: ["#diet_select","#app_name"],
+          placement: "right",
+          xOffset: "200"
+        },
+        {
+          title: "Searching Recipes",
+          content: "Filters are great for when know exactly what you want. For example, if you're craving artichokes, just start typing artichokes here! But, this app is best at helping you find foods you don't even know you want, so let's explore!",
+          target: ["#ingredient_name","#app_name"],
+          placement: "right",
+          xOffset: "200"
+        },    
+        {
+          title: "Grouping Recipes",
+          content: "Each bubble you see to the right is called a Group. This represents a bunch of recipes that are similar in some way: Mexican recipes, soups, breakfasts, etc.",
+          target: ["#group_sidebar_title", "#app_name"],
+          placement: "right"
+        },
+        {
+          title: "Group Order",
+          content: "The types of group that you see are controlled by this list. The top group is the one you see when the page loads. That's why you see recipes by ethnicity right now.",
+          target: ["#ethnicity_rank","#app_name"],
+          placement: "right"
+        },
+        {
+          title: "Group by Recipe Type",
+          content: "Let's change this up! Say you don't care what cuisine you're going to make, but you really want some kind of pizza! Drag Recipe Type to the top of the list to view the Pizza category. It may take a few seconds to load.",
+          target: ["#recipe_type_rank","#app_name"],
+          placement: "right"
+        },                 
+        {
+          title: "Pizza!",
+          content: "There's Pizzas and calzones!",
+          target: ["#circle_Pizza_and_calzones","#app_name"],
+          placement: "right"
+        },   
+        {
+          title: "Pro Tip",
+          content: "You could have also searched for pizzas in the Filter sidebar to get here.",
+          target: ["#type_select","#app_name"],
+          placement: "right",
+          xOffset: "200"
+        },
+        {
+          title: "Group Pizza by Ethnicity",
+          content: "It's 2018, and pizzas can come from many world cuisines! Because Ethnicity is in 2nd place in the list, you'll see all pizzas by cuisine when you click the Pizza group.",
+          target: ["#ethnicity_rank","#app_name"],
+          placement: "right"
+        },
+        {
+          title: "Group Pizza by Ethnicity",
+          content: "Click on the Pizza group to break them up by ethnicity.",
+          target: ["#circle_Pizza_and_calzones","#app_name"],
+          placement: "right"
+        },                                            
+        {
+          title: "Changing Group Order",
+          content: "Your pizza recipes are now divided up by ethnicity! Now, let's actually check out some pizza recipes! Right click on the Italian group and select View Recipes.",
+          target: ["#circle_Italian","#app_name"],
+          placement: "right"
+        },
+        {
+          title: "View Recipe Clusters",
+          content: "Each bubble is now a recipe. The colored groups indicate similar recipes. If you've been following along, you should have one cluster for calzones, one for traditional pizzas, and one group with non-traditional and sweet toppings.",
+          target: "#app_name",
+          placement: "right"
+        },
+        {
+          title: "Get Recipe Details",
+          content: "Click on a recipe to view details.",
+          target: ["recipe_node_Mozzarella_artichoke_and_pancetta_mini_pizzas","#app_name"],
+          placement: "right"
+        },
+        {
+          title: "See More Recipes",
+          content: "If you like what you see in a cluster, but haven't found the perfect recipe yet, then right click any recipe and select Next Page. You'll get more like it.",
+          target: ["recipe_node_Pizza_nutella","#app_name"],
+          placement: "left"
+        },
+        {
+          title: "Removing Groups",
+          content: "If you want to go back to an earlier view, just click the red X next to any group name. For example, clicking X next to Ethnicity= Italian will bring you back to all pizzas by ethnicity, so you can check out that Greek pizza that you missed earlier.",
+          target: ["recipe_type_rank","#app_name"],
+          placement: "right"
+        },
+        {
+          title: "Good luck!",
+          content: "This concludes the tutorial. We hope you enjoy using TheChefsApp!",
+          target: ["#app_name"],
+          placement: "right"
+        }                                                                                                   
+      ]
+    };
+
+    //tourStarted = true;
+    // Start the tour!
+    hopscotch.startTour(tour);  
+}
 
 function initGraph() {
     var margin = {top: 0, bottom: 20, left: 100, right: 100};
@@ -85,10 +222,44 @@ function initGraph() {
 
     svg.call(rec_tip);
 
-    info_tip = d3.tip().attr('class', 'info-tip')
+    info_tip = d3.tip()
+      .attr('class', 'info-tip')
       .direction(function(d) {return d.x > width/2 ? 'w' : 'e';})
       .html(function(d) {
-        return d.recipe_info ? d.recipe_info.ingredients.join('<br/>') : null; })
+        console.log(d);
+        if(d.recipe_info) {
+          tmpText = '<strong>Ingredients:</strong><br/>'
+          tmpText += d.recipe_info.ingredients.join('<br/>');
+          if(d.recipe_info.ethnicities 
+            && d.recipe_info.ethnicities.length > 0) {
+            tmpText += '<br/><br/><strong>Cuisines:</strong><br/>'
+            tmpText += d.recipe_info.ethnicities.join('<br/>');
+          }
+          if(d.recipe_info.courses
+            && d.recipe_info.courses.length > 0) {
+            tmpText += '<br/><br/><strong>Courses:</strong><br/>'
+            tmpText += d.recipe_info.courses.join('<br/>');
+          }
+          if(d.recipe_info.diets
+            && d.recipe_info.diets.length > 0) {
+            tmpText += '<br/><br/><strong>Diets:</strong><br/>'
+            tmpText += d.recipe_info.diets.join('<br/>');
+          }
+          if(d.recipe_info.occasions
+            && d.recipe_info.occasions.length > 0) {
+            tmpText += '<br/><br/><strong>Occasions:</strong><br/>'
+            tmpText += d.recipe_info.occasions.join('<br/>');
+          }      
+          if(d.recipe_info.recipe_types
+            && d.recipe_info.recipe_types.length > 0) {
+            tmpText += '<br/><br/><strong>Category:</strong><br/>'
+            tmpText += d.recipe_info.recipe_types.join('<br/>');
+          }                                        
+        } else {
+          tmpText = d.recipe_name;
+        }
+        return tmpText;
+      })
 
     svg.call(info_tip);
 }
@@ -137,10 +308,12 @@ function onGroupData(data) {
 
   var new_nodes = node.enter().append("g")
       .attr("class", "group")
-      .attr("transform", function(d) { return "translate(" + d.x + "," + -100 + ")"; });
+      .attr("transform", function(d) { 
+        return "translate(" + d.x + "," + -100 + ")"; });
 
   new_nodes.transition().duration(1000)
-      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+      .attr("transform", function(d) { 
+        return "translate(" + d.x + "," + d.y + ")"; });
 
   new_nodes.append("circle");
   new_nodes.append("text")
@@ -148,14 +321,19 @@ function onGroupData(data) {
     .attr("dy", ".35em");
 
   node.exit().transition().duration(500)
-    .attr("transform", function(d) { return "translate(" + d.x + "," + -100 + ")"; })
+    .attr("transform", function(d) { 
+      return "translate(" + d.x + "," + -100 + ")"; })
     .remove();
   node.transition()
     .duration(1000)
-    .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+    .attr("transform", function(d) { 
+      return "translate(" + d.x + "," + d.y + ")"; })
 
   node.select("circle")
     .style("fill", "#CDCDCD")
+    .attr("id", function(d) {
+      return "circle_" + clean_name(d.name);
+    })
     .on("mouseover", null)
     .on("mouseout", null)
     .on("click", function(d) {
@@ -172,6 +350,13 @@ function onGroupData(data) {
   node.on("mouseout", tip.hide);
   node.on("click", null);
   node.on("contextmenu", d3.contextMenu(cluster_menu));
+}
+
+function clean_name(text) {
+  text = text.replace(/ /g, "_");
+  text = text.replace(/&/g,"and");
+  text = text.replace(/;/g,"");
+  return text;
 }
 
 function wrap(text) {
@@ -334,6 +519,9 @@ function showRecipes(data) {
     .style("fill", function(d) { return color(d.cluster); });
 
   node.select("circle")
+    .attr("id", function(d) {
+      return "recipe_node_" + clean_name(d.recipe_name);
+    })
     .on("mouseover", rec_tip.show)
     .on("mouseout", rec_tip.hide)
     .on("click", rec_tip.hide);
@@ -363,7 +551,9 @@ function showRecipes(data) {
       $.post({
         url: '/get_recipe_info',
         data: 'recipe_id=' + d.recipe_id,
-        success: function(msg) { d.recipe_info = msg['results'][0]; info_tip.show(d, i, group) ;}
+        success: function(msg) { 
+          d.recipe_info = msg['results'][0]; 
+          info_tip.show(d, i, group) ;}
       });
 
     }
