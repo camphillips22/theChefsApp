@@ -234,7 +234,7 @@ class Recipe(db.Model):
             np.fromiter(jacc_gen, dtype=np.float64)
         )
 
-        model = DBSCAN(metric='precomputed', eps=clust_fact, n_jobs=-1)
+        model = DBSCAN(metric='precomputed', eps=clust_fact)
         model.fit(dist_mat)
         grouped['cluster'] = model.labels_
         return grouped.groupby('cluster')

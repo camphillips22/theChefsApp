@@ -9,12 +9,13 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet"/>
 <link href="{{ url_for('static', filename='custom.css') }}" rel="stylesheet"/>
 <link href="{{ url_for('static', filename='d3-context-menu.css') }}" rel="stylesheet"/>
-<link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hopscotch/0.3.1/css/hopscotch.css"/>
 {% endblock %}
 
 {% block sidebar %}
 <div class="filter-sidebar">
-  <h2>Filter Recipes</h2>
+  <h2 id="filter_sidebar_title">Filter and Search</h2>
   <form id="filter_form" class="form">
     {% for id, model in models %}
     <div class="form-group">
@@ -33,21 +34,20 @@
       {% endfor %}
       </select>
     </div>
-    <button id="submit_filter" class="btn btn-primary">Submit Filters</button>
   </form>
   <div>
-    <h3>Hierarchy Order</h3>
+    <h3 id="group_sidebar_title">Group Order</h3>
     <ul id="group_order" class="list-group">
-      <li class="list-group-item tile grabbable" name="ethnicity">
+      <li class="list-group-item tile grabbable" name="ethnicity" id="ethnicity_rank">
         <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
         <span class="glyphicon glyphicon-remove hidden-xs" style="color:red;" aria-hidden="true"></span>Ethnicity</li>
-      <li class="list-group-item tile grabbable" name="course">
+      <li class="list-group-item tile grabbable" name="course" id="course_rank">
         <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
         <span class="glyphicon glyphicon-remove hidden-xs" style="color:red" aria-hidden="true"></span>Course</li>
-      <li class="list-group-item tile grabbable" name="occasion">
+      <li class="list-group-item tile grabbable" name="occasion" id="occasion_rank">
         <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
         <span class="glyphicon glyphicon-remove hidden-xs" style="color:red" aria-hidden="true"></span>Occasion</li>
-      <li class="list-group-item tile grabbable" name="type" id ="typeAF">
+      <li class="list-group-item tile grabbable" name="type" id ="recipe_type_rank">
         <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
         <span class="glyphicon glyphicon-remove hidden-xs" style="color:red" aria-hidden="true"></span>Recipe Type</li>      
     </ul>
@@ -67,6 +67,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
 <script src="{{ url_for('static', filename='d3-context-menu.js')}}"></script>
 <script src="{{ url_for('static', filename='graph.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hopscotch/0.3.1/js/hopscotch.js"></script>
 <script>
 
 function updateFilterNames() {
@@ -77,6 +78,8 @@ function updateFilterNames() {
         $("#group_order li:nth-child(" + (idx+1) + ")").attr("name")
       );
   });
+
+  submitFilters();
 }
 
 function appendFilter(id, name) {
@@ -144,7 +147,7 @@ function submitFilters() {
 
 </script>
 <script>
-  $(document).ready(function() {
+  $(document).ready(function() {    
 
     $('.glyphicon-remove').click(function() {
 
@@ -164,6 +167,9 @@ function submitFilters() {
     $("#{{ id }}_select").select2({
       placeholder: "Select {{ id }}...",
       width: '100%'
+    }).on('change', function(d) {
+
+      submitFilters();
     });
     {% endfor %}
 
@@ -187,9 +193,11 @@ function submitFilters() {
       ajax: {
         type: "post",
         url: "{{ url_for('search_ingredients') }}",
-        dataType: "json",
-        delay: 250
+        dataType: "json"      
       }
+    }).on('change', function(d) {
+
+      submitFilters();
     });
 
     $("#filter_form").submit(function(e) {
@@ -214,12 +222,17 @@ function submitFilters() {
             showRecipes(data);
           else
             onGroupData(data);
-        },
+        }
       });
       $(".grouping_filter").remove();
+
+      if(!tourComplete && !tourStarted) {
+        startTour();
+      }
     });
 
     $("#filter_form").submit();
+  
   });
 </script>
 {% endblock %}
